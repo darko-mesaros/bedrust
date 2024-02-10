@@ -1,0 +1,14 @@
+[package]
+name = "bedrust"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.79"
+aws-config = "1.1.5"
+aws-sdk-bedrockruntime = "1.14.0"
+aws-types = "1.1.5"
+serde_json = "1.0.113"
+tokio = { version = "1.36.0", features = ["full"] }
