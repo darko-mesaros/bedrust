@@ -1,3 +1,5 @@
+mod utils;
+
 use anyhow::Result;
 
 use aws_sdk_bedrockruntime::Client;
@@ -20,10 +22,10 @@ async fn main() -> Result<()>{
     let question = "Who is Alan Ford, a comic book character?";
 
     //let model_id = "meta.llama2-70b-chat-v1";
-    let model_id = "cohere.command-text-v14";
-    //let model_id = "anthropic.claude-v2";
+    //let model_id = "cohere.command-text-v14";
+    let model_id = "anthropic.claude-v2";
 
-    match model_id {
+    let bedrock_call: BedrockCall = match model_id {
         "meta.llama2-70b-chat-v1" => {
             let llama2_body = Llama2Body::new(
                 // prompt
@@ -35,15 +37,14 @@ async fn main() -> Result<()>{
                 // max_gen_len
                 1024
                 );
-            let llama2_call = BedrockCall::new(
+            BedrockCall::new(
                 llama2_body.convert_to_blob()?,
                 String::from("application/json"), 
                 // accept
                 String::from("*/*"), 
                 // model-id
                 model_id.to_string(),
-                );
-            call_bedrock_stream(bedrock_client, llama2_call).await?;
+            )
         },
         "cohere.command-text-v14" => {
             let cohere_body = CohereBody::new(
@@ -63,15 +64,14 @@ async fn main() -> Result<()>{
                 true,
                 );
 
-            let cohere_call = BedrockCall::new(
+            BedrockCall::new(
                 cohere_body.convert_to_blob()?,
                 String::from("application/json"), 
                 // accept
                 String::from("*/*"), 
                 // model-id
                 model_id.to_string(),
-                );
-            call_bedrock_stream(bedrock_client, cohere_call).await?;
+            )
         },
         "anthropic.claude-v2" => {
             let claude_body = ClaudeBody::new(
@@ -89,20 +89,25 @@ async fn main() -> Result<()>{
                 Vec::new(),
             );
 
-            let claude_call = BedrockCall::new(
+            BedrockCall::new(
                 claude_body.convert_to_blob()?,
                 String::from("application/json"), 
                 // accept
                 String::from("*/*"), 
                 // model-id
                 model_id.to_string(),
-            );
+            )
 
-            call_bedrock_stream(bedrock_client, claude_call).await?;
         },
         &_ => todo!()
+    };
 
-    }
+    utils::hello_header("Welcome to Bedrust");
 
+    println!("----------------------------------------");
+    println!("Calling Model: {}", &model_id);
+    println!("Question being asked: {}", &question);
+    println!("----------------------------------------");
+    call_bedrock_stream(bedrock_client, bedrock_call).await?;
     Ok(())
 }
