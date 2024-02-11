@@ -1,7 +1,10 @@
 mod utils;
 
+use std::io;
+
 use clap::Parser;
 use anyhow::Result;
+
 use aws_sdk_bedrockruntime::Client;
 use bedrust::configure_aws;
 use bedrust::ask_bedrock;
@@ -14,19 +17,24 @@ async fn main() -> Result<()>{
     let arguments  = utils::Args::parse();
     // configuring the SDK
     let config =  configure_aws(String::from("us-west-2")).await;
-
     // setup the bedrock client
     let bedrock_client = Client::new(&config);
 
-    // VARIABLES
-    let question = "Which songs are listed in the youtube video 'evolution of dance'?";
+
+    //let question = "Which songs are listed in the youtube video 'evolution of dance'?";
     let model_id = arguments.model_id.to_str();
 
     utils::hello_header("Welcome to Bedrust");
+    // get user input
+    let mut question = String::new();
+    println!("----------------------------------------");
+    println!("What would you like to know today?");
+    println!("Human: ");
+    io::stdin().read_line(&mut question).unwrap();
+    // VARIABLES
 
     println!("----------------------------------------");
     println!("Calling Model: {}", &model_id);
-    println!("Question being asked: {}", &question);
     println!("----------------------------------------");
     ask_bedrock(question.to_string(), model_id, bedrock_client).await?;
 
