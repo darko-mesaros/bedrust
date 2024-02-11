@@ -33,6 +33,88 @@ impl BedrockCall {
     }
 }
 
+
+enum BedrockCallSum {
+    CohereBCS { model_id: String, body: CohereBody},
+    ClaudeBCS { model_id: String, body: ClaudeBody},
+    Llama2BCS { model_id: String, body: Llama2Body}    
+}
+
+// Use a sum type here, 
+fn bcs_to_bedrock_call(bcs: BedrockCallSum) ->  Result<BedrockCall> {
+    match bcs {
+        BedrockCallSum::CohereBCS { model_id, body } => {
+            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".into(), "*/*".into(), model_id))
+        }
+        BedrockCallSum::ClaudeBCS { model_id, body } => {
+            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".into(), "*/*".into(), model_id))
+        }
+        BedrockCallSum::Llama2BCS { model_id, body } => {
+            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".into(), "*/*".into(), model_id))
+        }
+	
+    }
+}
+
+
+// Create a BedrockCallSum with sensible defaults for each model
+pub fn q_to_bcs_with_defaults(question: String, model_id: String) -> Result<BedrockCallSum> {
+    match model_id {
+        "meta.llama2-70b-chat-v1" => {
+            let llama2_body = Llama2Body::new(
+                // prompt
+                question.to_string(),
+                // temperature
+                1.0,
+                // p
+                0.1,
+                // max_gen_len
+                1024
+                );
+	    BedrockCallSum::Llama2BCS("meta.llama2-70b-chat-v1", llama2_body)
+        },
+        "cohere.command-text-v14" => {
+            let cohere_body = CohereBody::new(
+                // prompt
+                question.to_string(),
+                // max tokens
+                500,
+                // temperature
+                1.0,
+                // p
+                0.1,
+                // k
+                1,
+                // stop sequences
+                Vec::new(),
+                // stream
+                true,
+                );
+
+	    BedrockCallSum::CohereBCS("cohere.command-text-v14", cohere_body)
+        },
+        "anthropic.claude-v2" => {
+            let claude_body = ClaudeBody::new(
+                // prompt
+                format!("\n\nHuman: {}\n\nAssistant:", question).to_string(),
+                // temp
+                1.0,
+                // top p
+                1.0,
+                // top k
+                250,
+                // max tokens to sample
+                500,
+                // stop sequences
+                Vec::new(),
+            );
+	    BedrockCallSum::ClaudeBCS("anthropic.claude-v2", claude_body)
+	},
+	&_ => todo!()
+    }
+}
+
+
 //######################################## COHERE
 
 #[derive(serde::Serialize, Debug)]

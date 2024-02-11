@@ -19,89 +19,9 @@ async fn main() -> Result<()>{
     let bedrock_client = Client::new(&config);
 
     // VARIABLES
-    let question = "Who is Alan Ford, a comic book character?";
-
-    //let model_id = "meta.llama2-70b-chat-v1";
-    //let model_id = "cohere.command-text-v14";
-    let model_id = "anthropic.claude-v2";
-
-    let bedrock_call: BedrockCall = match model_id {
-        "meta.llama2-70b-chat-v1" => {
-            let llama2_body = Llama2Body::new(
-                // prompt
-                question.to_string(),
-                // temperature
-                1.0,
-                // p
-                0.1,
-                // max_gen_len
-                1024
-                );
-            BedrockCall::new(
-                llama2_body.convert_to_blob()?,
-                String::from("application/json"), 
-                // accept
-                String::from("*/*"), 
-                // model-id
-                model_id.to_string(),
-            )
-        },
-        "cohere.command-text-v14" => {
-            let cohere_body = CohereBody::new(
-                // prompt
-                question.to_string(),
-                // max tokens
-                500,
-                // temperature
-                1.0,
-                // p
-                0.1,
-                // k
-                1,
-                // stop sequences
-                Vec::new(),
-                // stream
-                true,
-                );
-
-            BedrockCall::new(
-                cohere_body.convert_to_blob()?,
-                String::from("application/json"), 
-                // accept
-                String::from("*/*"), 
-                // model-id
-                model_id.to_string(),
-            )
-        },
-        "anthropic.claude-v2" => {
-            let claude_body = ClaudeBody::new(
-                // prompt
-                format!("\n\nHuman: {}\n\nAssistant:", question).to_string(),
-                // temp
-                1.0,
-                // top p
-                1.0,
-                // top k
-                250,
-                // max tokens to sample
-                500,
-                // stop sequences
-                Vec::new(),
-            );
-
-            BedrockCall::new(
-                claude_body.convert_to_blob()?,
-                String::from("application/json"), 
-                // accept
-                String::from("*/*"), 
-                // model-id
-                model_id.to_string(),
-            )
-
-        },
-        &_ => todo!()
-    };
-
+    let question = "List all of the memes in the Weezer song 'pork and beans'";
+    let model_id = "anthropic.claude-v2"
+    let bedrock_call = q_to_bcs_with_defaults(&question, &model_id)
     utils::hello_header("Welcome to Bedrust");
 
     println!("----------------------------------------");
