@@ -15,7 +15,7 @@ use serde_json::{Value};
 use std::io::Write;
 
 //========================================
-pub struct BedrockCall {
+struct BedrockCall {
     pub body: Blob,
     pub content_type: String,
     pub accept: String,
@@ -23,7 +23,7 @@ pub struct BedrockCall {
 }
 
 impl BedrockCall {
-    pub fn new(body: Blob, content_type: String, accept: String, model_id: String ) -> BedrockCall {
+    fn new(body: Blob, content_type: String, accept: String, model_id: String ) -> BedrockCall {
         BedrockCall {
             body,
             content_type,
@@ -31,6 +31,113 @@ impl BedrockCall {
             model_id,
         }
     }
+}
+
+
+// Eventually this wil need to support every model in ArgModels, but
+// this will not necessarily be a 1-to-1 mapping. For example, minor
+// version updates to the model will have the same body, but differnet
+// values than in ArgModels. Thus, |ArgModels| >= |BedrockCallSum|.
+enum BedrockCallSum {
+    CohereBCS { model_id: String, body: CohereBody},
+    ClaudeBCS { model_id: String, body: ClaudeBody},
+    Llama2BCS { model_id: String, body: Llama2Body}    
+}
+
+// Using a sum type to represent all models that can go through here.
+// This way if each model needs special processing to make a BedrockCall
+// that can be implemented in one place.
+fn bcs_to_bedrock_call(bcs: BedrockCallSum) ->  Result<BedrockCall> {
+    match bcs {
+        BedrockCallSum::CohereBCS { model_id, body } => {
+            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".into(), "*/*".into(), model_id))
+        }
+        BedrockCallSum::ClaudeBCS { model_id, body } => {
+            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".into(), "*/*".into(), model_id))
+        }
+        BedrockCallSum::Llama2BCS { model_id, body } => {
+            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".into(), "*/*".into(), model_id))
+        }
+	
+    }
+}
+
+
+// Create a BedrockCallSum with sensible defaults for each model.
+// This will fail if model_id is not known to q_to_bcs_with_defaults.
+// TODO: When model_id is replaced with ArgModels, update this.
+fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCallSum> {
+    match model_id {
+        "meta.llama2-70b-chat-v1" => {
+            let llama2_body = Llama2Body::new(
+                // prompt
+                question.to_string(),
+                // temperature
+                1.0,
+                // p
+                0.1,
+                // max_gen_len
+                1024
+                );
+	    Ok(BedrockCallSum::Llama2BCS{model_id: String::from("meta.llama2-70b-chat-v1"), body: llama2_body})
+	    
+        },
+        "cohere.command-text-v14" => {
+            let cohere_body = CohereBody::new(
+                // prompt
+                question.to_string(),
+                // max tokens
+                500,
+                // temperature
+                1.0,
+                // p
+                0.1,
+                // k
+                1,
+                // stop sequences
+                Vec::new(),
+                // stream
+                true,
+                );
+
+	    Ok(BedrockCallSum::CohereBCS{model_id: String::from("cohere.command-text-v14"), body: cohere_body})
+        },
+        "anthropic.claude-v2" => {
+            let claude_body = ClaudeBody::new(
+                // prompt
+                format!("\n\nHuman: {}\n\nAssistant:", question).to_string(),
+                // temp
+                1.0,
+                // top p
+                1.0,
+                // top k
+                250,
+                // max tokens to sample
+                500,
+                // stop sequences
+                Vec::new(),
+            );
+	    Ok(BedrockCallSum::ClaudeBCS{model_id: String::from("anthropic.claude-v2"), body: claude_body})
+	},
+	&_ => todo!()
+    }
+}
+
+// Given a question and model_id, create a BedrockCall to this model.
+// This will fail if model_id is not known to q_to_bcs_with_defaults.
+// TODO: When model_id is replaced with ArgModels, update this.
+fn mk_bedrock_call(question: String, model_id: &str) -> Result<BedrockCall> {
+    let bcs = q_to_bcs_with_defaults(question.to_string(), &model_id)?;
+    bcs_to_bedrock_call(bcs)
+}
+
+// Given a question and model_id, create and execute a call to bedrock.
+// This will fail if model_id is not known to q_to_bcs_with_defaults
+// TODO: When model_id is replaced with ArgModels, update this.
+pub async fn ask_bedrock(question: String, model_id: &str, client: Client) -> Result<()>{ 
+    let bcall = mk_bedrock_call(question, model_id)?;
+    call_bedrock_stream(client, bcall).await;
+    Ok(())
 }
 
 //######################################## COHERE
@@ -170,7 +277,7 @@ pub async fn configure_aws(s: String) -> aws_config::SdkConfig {
 
 }
 
-pub async fn call_bedrock(bc: Client, c: BedrockCall) -> Result<String>{
+async fn call_bedrock(bc: Client, c: BedrockCall) -> Result<String>{
 
     let response = bc.invoke_model()
     .body(c.body)
@@ -189,7 +296,7 @@ pub async fn call_bedrock(bc: Client, c: BedrockCall) -> Result<String>{
 
 }
 
-pub async fn call_bedrock_stream(bc: Client, c: BedrockCall) -> Result<()>{
+async fn call_bedrock_stream(bc: Client, c: BedrockCall) -> Result<()>{
 
     let mut resp =  bc.invoke_model_with_response_stream()
         .body(c.body)
