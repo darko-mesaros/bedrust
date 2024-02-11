@@ -34,7 +34,7 @@ impl BedrockCall {
 }
 
 
-enum BedrockCallSum {
+pub enum BedrockCallSum {
     CohereBCS { model_id: String, body: CohereBody},
     ClaudeBCS { model_id: String, body: ClaudeBody},
     Llama2BCS { model_id: String, body: Llama2Body}    
@@ -58,7 +58,7 @@ fn bcs_to_bedrock_call(bcs: BedrockCallSum) ->  Result<BedrockCall> {
 
 
 // Create a BedrockCallSum with sensible defaults for each model
-pub fn q_to_bcs_with_defaults(question: String, model_id: String) -> Result<BedrockCallSum> {
+fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCallSum> {
     match model_id {
         "meta.llama2-70b-chat-v1" => {
             let llama2_body = Llama2Body::new(
@@ -71,7 +71,8 @@ pub fn q_to_bcs_with_defaults(question: String, model_id: String) -> Result<Bedr
                 // max_gen_len
                 1024
                 );
-	    BedrockCallSum::Llama2BCS("meta.llama2-70b-chat-v1", llama2_body)
+	    Ok(BedrockCallSum::Llama2BCS{model_id: String::from("meta.llama2-70b-chat-v1"), body: llama2_body})
+	    
         },
         "cohere.command-text-v14" => {
             let cohere_body = CohereBody::new(
@@ -91,7 +92,7 @@ pub fn q_to_bcs_with_defaults(question: String, model_id: String) -> Result<Bedr
                 true,
                 );
 
-	    BedrockCallSum::CohereBCS("cohere.command-text-v14", cohere_body)
+	    Ok(BedrockCallSum::CohereBCS{model_id: String::from("cohere.command-text-v14"), body: cohere_body})
         },
         "anthropic.claude-v2" => {
             let claude_body = ClaudeBody::new(
@@ -108,12 +109,23 @@ pub fn q_to_bcs_with_defaults(question: String, model_id: String) -> Result<Bedr
                 // stop sequences
                 Vec::new(),
             );
-	    BedrockCallSum::ClaudeBCS("anthropic.claude-v2", claude_body)
+	    Ok(BedrockCallSum::ClaudeBCS{model_id: String::from("anthropic.claude-v2"), body: claude_body})
 	},
 	&_ => todo!()
     }
 }
 
+
+pub fn mk_bedrock_call(question: String, model_id: &str) -> Result<BedrockCall> {
+    let bcs = q_to_bcs_with_defaults(question.to_string(), &model_id)?;
+    bcs_to_bedrock_call(bcs)
+}
+
+pub async fn ask_bedrock(question: String, model_id: &str, client: Client) -> Result<()>{ 
+    let bcall = mk_bedrock_call(question, model_id)?;
+    call_bedrock_stream(client, bcall).await;
+    Ok(())
+}
 
 //######################################## COHERE
 
