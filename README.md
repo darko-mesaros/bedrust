@@ -20,8 +20,10 @@ Options:
   -V, --version              Print version
 ```
 
+Once, prompted enter your question, and hit <ENTER>. 🚀
+
 ## TODO
-- [ ] Ability to get user input
+- [x] Ability to get user input
 - [x] Being able to select a model
 - [ ] Have a conversation with the model
 - [x] Stream the responses back word by word

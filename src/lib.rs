@@ -50,13 +50,13 @@ enum BedrockCallSum {
 fn bcs_to_bedrock_call(bcs: BedrockCallSum) ->  Result<BedrockCall> {
     match bcs {
         BedrockCallSum::CohereBCS { model_id, body } => {
-            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".into(), "*/*".into(), model_id))
+            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
         }
         BedrockCallSum::ClaudeBCS { model_id, body } => {
-            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".into(), "*/*".into(), model_id))
+            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
         }
         BedrockCallSum::Llama2BCS { model_id, body } => {
-            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".into(), "*/*".into(), model_id))
+            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
         }
 	
     }
@@ -127,7 +127,7 @@ fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCal
 // This will fail if model_id is not known to q_to_bcs_with_defaults.
 // TODO: When model_id is replaced with ArgModels, update this.
 fn mk_bedrock_call(question: String, model_id: &str) -> Result<BedrockCall> {
-    let bcs = q_to_bcs_with_defaults(question.to_string(), &model_id)?;
+    let bcs = q_to_bcs_with_defaults(question.to_string(), model_id)?;
     bcs_to_bedrock_call(bcs)
 }
 
@@ -277,6 +277,8 @@ pub async fn configure_aws(s: String) -> aws_config::SdkConfig {
 
 }
 
+// this function is only called if we do not want the streaming result back.
+// so far this is here only for legacy reasons
 async fn call_bedrock(bc: Client, c: BedrockCall) -> Result<String>{
 
     let response = bc.invoke_model()
