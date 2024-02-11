@@ -20,7 +20,7 @@ Options:
   -V, --version              Print version
 ```
 
-Once, prompted enter your question, and hit <ENTER>. 🚀
+Once, prompted enter your question, and hit `ENTER`. 🚀
 
 ## TODO
 - [x] Ability to get user input
