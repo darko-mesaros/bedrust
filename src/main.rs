@@ -1,11 +1,8 @@
 mod utils;
 
 use anyhow::Result;
-
 use aws_sdk_bedrockruntime::Client;
-
 use bedrust::configure_aws;
-use bedrust::call_bedrock_stream;
 use bedrust::ask_bedrock;
 
 
@@ -19,7 +16,7 @@ async fn main() -> Result<()>{
     let bedrock_client = Client::new(&config);
 
     // VARIABLES
-    let question = "Which songs are listed in the classic dancing guy youtube video 'evolution of dance'";
+    let question = "Which songs are listed in the youtube video 'evolution of dance'?";
     let model_id = "anthropic.claude-v2";
 
     utils::hello_header("Welcome to Bedrust");
