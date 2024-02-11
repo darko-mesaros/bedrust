@@ -1,8 +1,9 @@
 mod utils;
 
 use anyhow::Result;
-
+use clap::Parser;
 use aws_sdk_bedrockruntime::Client;
+
 use bedrust::CohereBody;
 use bedrust::Llama2Body;
 use bedrust::configure_aws;
@@ -12,6 +13,10 @@ use bedrust::BedrockCall;
 
 #[tokio::main]
 async fn main() -> Result<()>{
+
+    // parse arguments
+    let arguments = utils::Args::parse();
+
     // configuring the SDK
     let config =  configure_aws(String::from("us-west-2")).await;
 
@@ -21,10 +26,10 @@ async fn main() -> Result<()>{
     // VARIABLES
     let question = "Who is Alan Ford, a comic book character?";
 
-    //let model_id = "meta.llama2-70b-chat-v1";
-    //let model_id = "cohere.command-text-v14";
-    let model_id = "anthropic.claude-v2";
+    // get model from argument
+    let model_id = arguments.model_id.to_str();
 
+    // run start
     let bedrock_call: BedrockCall = match model_id {
         "meta.llama2-70b-chat-v1" => {
             let llama2_body = Llama2Body::new(
