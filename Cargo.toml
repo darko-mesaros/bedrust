@@ -7,8 +7,10 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.79"
-aws-config = "1.1.5"
+aws-config = { version = "1.1.5", features = ["behavior-version-latest"]}
 aws-sdk-bedrockruntime = "1.14.0"
 aws-types = "1.1.5"
+futures = "0.3.30"
+serde = { version = "1.0.196", features = ["derive"] }
 serde_json = "1.0.113"
 tokio = { version = "1.36.0", features = ["full"] }
