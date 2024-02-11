@@ -9,9 +9,20 @@ Currently supporting the following models:
 - Llama2 70B
 - Cohere Command
 
+## Usage
+
+```bash
+Usage: bedrust --model-id <MODEL_ID>
+
+Options:
+  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2]
+  -h, --help                 Print help
+  -V, --version              Print version
+```
+
 ## TODO
 - [ ] Ability to get user input
-- [ ] Being able to select a model
+- [x] Being able to select a model
 - [ ] Have a conversation with the model
 - [x] Stream the responses back word by word
 - [ ] Better error handling
