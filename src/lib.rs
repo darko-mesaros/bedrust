@@ -65,7 +65,6 @@ fn bcs_to_bedrock_call(bcs: BedrockCallSum) ->  Result<BedrockCall> {
 
 // Create a BedrockCallSum with sensible defaults for each model.
 // This will fail if model_id is not known to q_to_bcs_with_defaults.
-// TODO: When model_id is replaced with ArgModels, update this.
 fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCallSum> {
     match model_id {
         "meta.llama2-70b-chat-v1" => {
@@ -125,7 +124,6 @@ fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCal
 
 // Given a question and model_id, create a BedrockCall to this model.
 // This will fail if model_id is not known to q_to_bcs_with_defaults.
-// TODO: When model_id is replaced with ArgModels, update this.
 fn mk_bedrock_call(question: String, model_id: &str) -> Result<BedrockCall> {
     let bcs = q_to_bcs_with_defaults(question.to_string(), model_id)?;
     bcs_to_bedrock_call(bcs)
@@ -133,7 +131,6 @@ fn mk_bedrock_call(question: String, model_id: &str) -> Result<BedrockCall> {
 
 // Given a question and model_id, create and execute a call to bedrock.
 // This will fail if model_id is not known to q_to_bcs_with_defaults
-// TODO: When model_id is replaced with ArgModels, update this.
 pub async fn ask_bedrock(question: String, model_id: &str, client: Client) -> Result<()>{ 
     let bcall = mk_bedrock_call(question, model_id)?;
     call_bedrock_stream(client, bcall).await;
