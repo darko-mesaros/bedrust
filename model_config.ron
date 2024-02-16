@@ -1,0 +1,22 @@
+ModelConfigs(
+  llama270b: (
+    temperature: 1, 
+    p: 0.1,
+    max_gen_len: 1024,
+  ),
+  cohere_command:(
+      max_tokens: 500,
+      temperature: 1.0,
+      p: 0.1,
+      k: 1,
+      stop_sequences: [],
+      stream: true,
+  ),
+  claude_v2:(
+      temperature: 1.0,
+      p: 1.0,
+      k: 250,
+      max_tokens_to_sample: 500,
+      stop_sequences: [],
+  )
+)
