@@ -1,4 +1,5 @@
 mod utils;
+mod models;
 
 use std::io;
 
@@ -19,7 +20,6 @@ async fn main() -> Result<()>{
     let config =  configure_aws(String::from("us-west-2")).await;
     // setup the bedrock client
     let bedrock_client = Client::new(&config);
-
 
     //let question = "Which songs are listed in the youtube video 'evolution of dance'?";
     let model_id = arguments.model_id.to_str();

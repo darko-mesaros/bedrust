@@ -1,3 +1,5 @@
+mod models;
+
 use aws_config::meta::region::RegionProviderChain;
 use aws_config::BehaviorVersion;
 use aws_types::region::Region;
@@ -11,6 +13,7 @@ use aws_sdk_bedrockruntime::primitives::Blob;
 use aws_sdk_bedrockruntime::types::ResponseStream;
 
 use serde_json::{Value};
+use serde::{Serialize, Deserialize};
 
 use std::io::Write;
 
@@ -32,7 +35,6 @@ impl BedrockCall {
         }
     }
 }
-
 
 // Eventually this wil need to support every model in ArgModels, but
 // this will not necessarily be a 1-to-1 mapping. For example, minor
@@ -62,60 +64,48 @@ fn bcs_to_bedrock_call(bcs: BedrockCallSum) ->  Result<BedrockCall> {
     }
 }
 
-
 // Create a BedrockCallSum with sensible defaults for each model.
 // This will fail if model_id is not known to q_to_bcs_with_defaults.
 // TODO: When model_id is replaced with ArgModels, update this.
 fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCallSum> {
+    // call the function to load model settings:
+    let model_defaults = models::load_config(String::from("model_config.ron"))?;
+
     match model_id {
         "meta.llama2-70b-chat-v1" => {
+            let d = model_defaults.llama270b;
             let llama2_body = Llama2Body::new(
-                // prompt
                 question.to_string(),
-                // temperature
-                1.0,
-                // p
-                0.1,
-                // max_gen_len
-                1024
+                d.temperature,
+                d.p,
+                d.max_gen_len
                 );
 	    Ok(BedrockCallSum::Llama2BCS{model_id: String::from("meta.llama2-70b-chat-v1"), body: llama2_body})
 	    
         },
         "cohere.command-text-v14" => {
+            let d = model_defaults.cohere_command;
             let cohere_body = CohereBody::new(
-                // prompt
                 question.to_string(),
-                // max tokens
-                500,
-                // temperature
-                1.0,
-                // p
-                0.1,
-                // k
-                1,
-                // stop sequences
-                Vec::new(),
-                // stream
-                true,
+                d.max_tokens,
+                d.temperature,
+                d.p,
+                d.k,
+                d.stop_sequences,
+                d.stream,
                 );
 
 	    Ok(BedrockCallSum::CohereBCS{model_id: String::from("cohere.command-text-v14"), body: cohere_body})
         },
         "anthropic.claude-v2" => {
+            let d = model_defaults.claude_v2;
             let claude_body = ClaudeBody::new(
-                // prompt
                 format!("\n\nHuman: {}\n\nAssistant:", question).to_string(),
-                // temp
-                1.0,
-                // top p
-                1.0,
-                // top k
-                250,
-                // max tokens to sample
-                500,
-                // stop sequences
-                Vec::new(),
+                d.temperature, 
+                d.p, 
+                d.k, 
+                d.max_tokens_to_sample, 
+                d.stop_sequences, 
             );
 	    Ok(BedrockCallSum::ClaudeBCS{model_id: String::from("anthropic.claude-v2"), body: claude_body})
 	},
