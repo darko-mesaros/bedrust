@@ -25,6 +25,11 @@ ModelConfigs(
       k: 250,
       max_tokens_to_sample: 500,
       stop_sequences: [],
+  ),
+  jurrasic_2_ultra:(
+      temperature: 0.7,
+      topP: 1,
+      maxTokens: 200,
+      stopSequences: [],
   )
-
 )
