@@ -52,9 +52,9 @@ pub struct ClaudeV21Config {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Jurrasic2UltraConfig {
     pub temperature: f32,
-    pub topP: f32,
-    pub maxTokens: i32,
-    pub stopSequences: Vec<String>,
+    pub top_p: f32,
+    pub max_tokens: i32,
+    pub stop_sequences: Vec<String>,
 }
 
 //======================================== FUNCTIONS
