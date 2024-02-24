@@ -1,7 +1,5 @@
-// TODO:
-//  Make Jurrasic 2 Ultra Work
-mod utils;
-mod models;
+pub mod utils;
+pub mod models;
 
 use std::io;
 
@@ -10,8 +8,6 @@ use anyhow::Result;
 
 use bedrust::configure_aws;
 use bedrust::ask_bedrock;
-
-
 
 #[tokio::main]
 async fn main() -> Result<()>{

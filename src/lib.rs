@@ -12,6 +12,7 @@ use aws_sdk_bedrockruntime::primitives::Blob;
 use aws_sdk_bedrockruntime::types::ResponseStream;
 
 use models::check_for_streaming;
+use models::load_config;
 
 use std::io::Write;
 
@@ -84,7 +85,8 @@ fn bcs_to_bedrock_call(bcs: BedrockCallSum) ->  Result<BedrockCall> {
 // This will fail if model_id is not known to q_to_bcs_with_defaults.
 fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCallSum> {
     // call the function to load model settings:
-    let model_defaults = models::load_config(String::from("model_config.ron"))?;
+    // TODO: do not hardcode the name and path of the config file
+    let model_defaults = load_config(String::from("model_config.ron"))?;
 
     match model_id {
         "meta.llama2-70b-chat-v1" => {
@@ -117,9 +119,9 @@ fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCal
             let jurrasic_body = Jurrasic2Body::new(
                 question.to_string(),
                 d.temperature, 
-                d.topP, 
-                d.maxTokens, 
-                d.stopSequences,
+                d.top_p, 
+                d.max_tokens, 
+                d.stop_sequences,
             );
 	    Ok(BedrockCallSum::Jurrasic2BCS{model_id: String::from("ai21.j2-ultra-v1"), body: jurrasic_body})
         },
@@ -272,12 +274,13 @@ pub struct Llama2Response {
 //######################################## END CLAUDE
 //######################################## START JURRASIC
 #[derive(serde::Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Jurrasic2Body {
     pub prompt: String,
     pub temperature: f32,
-    pub topP: f32,
-    pub maxTokens: i32,
-    pub stopSequences: Vec<String>,
+    pub top_p: f32,
+    pub max_tokens: i32,
+    pub stop_sequences: Vec<String>,
 }
 
 impl Jurrasic2Body {
@@ -285,9 +288,9 @@ impl Jurrasic2Body {
         Jurrasic2Body {
             prompt,
             temperature,
-            topP: top_p,
-            maxTokens: max_tokens,
-            stopSequences: stop_sequences
+            top_p,
+            max_tokens,
+            stop_sequences
         }
     }
 
