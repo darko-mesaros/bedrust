@@ -106,7 +106,7 @@ fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCal
                 d.max_tokens_to_sample, 
                 d.stop_sequences, 
             );
-	    Ok(BedrockCallSum::ClaudeBCS{model_id: String::from("anthropic.claude-v2"), body: claude_body})
+	    Ok(BedrockCallSum::ClaudeBCS{model_id: String::from("anthropic.claude-v2:1"), body: claude_body})
         },
         "anthropic.claude-v2" => {
             let d = model_defaults.claude_v2;
@@ -327,7 +327,7 @@ async fn call_bedrock_stream(bc: Client, c: BedrockCall) -> Result<()>{
                                 output += &good_response_chunk.text;
                             }
                         },
-                        "anthropic.claude-v2" => {
+                        "anthropic.claude-v2" | "anthropic.claude-v2:1" => {
                             if let Ok(good_response_chunk) = serde_json::from_slice::<ClaudeResponse>(payload_bytes.as_ref()) {
                                 print!("{}", good_response_chunk.completion);
                                 io::stdout().flush().unwrap();
