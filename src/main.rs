@@ -1,3 +1,5 @@
+// TODO:
+//  Make Jurrasic 2 Ultra Work
 mod utils;
 mod models;
 
@@ -6,7 +8,6 @@ use std::io;
 use clap::Parser;
 use anyhow::Result;
 
-use aws_sdk_bedrockruntime::Client;
 use bedrust::configure_aws;
 use bedrust::ask_bedrock;
 
@@ -18,8 +19,10 @@ async fn main() -> Result<()>{
     let arguments  = utils::Args::parse();
     // configuring the SDK
     let config =  configure_aws(String::from("us-west-2")).await;
+    // setup the bedrock-runtime client
+    let bedrock_runtime_client = aws_sdk_bedrockruntime::Client::new(&config);
     // setup the bedrock client
-    let bedrock_client = Client::new(&config);
+    let bedrock_client = aws_sdk_bedrock::Client::new(&config);
 
     //let question = "Which songs are listed in the youtube video 'evolution of dance'?";
     let model_id = arguments.model_id.to_str();
@@ -31,12 +34,11 @@ async fn main() -> Result<()>{
     println!("What would you like to know today?");
     println!("Human: ");
     io::stdin().read_line(&mut question).unwrap();
-    // VARIABLES
 
     println!("----------------------------------------");
     println!("Calling Model: {}", &model_id);
     println!("----------------------------------------");
-    ask_bedrock(question.to_string(), model_id, bedrock_client).await?;
+    ask_bedrock(question.to_string(), model_id, bedrock_runtime_client, bedrock_client).await?;
 
     Ok(())
 }

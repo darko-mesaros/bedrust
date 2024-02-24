@@ -8,6 +8,7 @@ Currently supporting the following models:
 - Claude V2
 - Llama2 70B
 - Cohere Command
+- Jurrasic 2 Ultra
 
 ## Usage
 

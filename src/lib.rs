@@ -8,16 +8,28 @@ use std::{env, io};
 
 use anyhow::Result;
 
-use aws_sdk_bedrockruntime::Client;
 use aws_sdk_bedrockruntime::primitives::Blob;
 use aws_sdk_bedrockruntime::types::ResponseStream;
 
-use serde_json::{Value};
-use serde::{Serialize, Deserialize};
+use models::check_for_streaming;
 
 use std::io::Write;
 
-//========================================
+//======================================== AWS
+pub async fn configure_aws(s: String) -> aws_config::SdkConfig {
+    let provider = RegionProviderChain::first_try(env::var("AWS_DEFAULT_REGION").ok().map(Region::new))
+        .or_default_provider()
+        .or_else(Region::new(s));
+
+    aws_config::defaults(BehaviorVersion::latest())
+        .region(provider)
+        .load()
+        .await
+
+}
+//======================================== END AWS
+
+#[derive(Debug)]
 struct BedrockCall {
     pub body: Blob,
     pub content_type: String,
@@ -43,7 +55,8 @@ impl BedrockCall {
 enum BedrockCallSum {
     CohereBCS { model_id: String, body: CohereBody},
     ClaudeBCS { model_id: String, body: ClaudeBody},
-    Llama2BCS { model_id: String, body: Llama2Body}    
+    Llama2BCS { model_id: String, body: Llama2Body},
+    Jurrasic2BCS { model_id: String, body: Jurrasic2Body}    
 }
 
 // Using a sum type to represent all models that can go through here.
@@ -58,6 +71,9 @@ fn bcs_to_bedrock_call(bcs: BedrockCallSum) ->  Result<BedrockCall> {
             Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
         }
         BedrockCallSum::Llama2BCS { model_id, body } => {
+            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
+        }
+        BedrockCallSum::Jurrasic2BCS { model_id, body } => {
             Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
         }
 	
@@ -96,8 +112,19 @@ fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCal
 
 	    Ok(BedrockCallSum::CohereBCS{model_id: String::from("cohere.command-text-v14"), body: cohere_body})
         },
-        "anthropic.claude-v2" => {
-            let d = model_defaults.claude_v2;
+        "ai21.j2-ultra-v1" => {
+            let d = model_defaults.jurrasic_2_ultra;
+            let jurrasic_body = Jurrasic2Body::new(
+                question.to_string(),
+                d.temperature, 
+                d.topP, 
+                d.maxTokens, 
+                d.stopSequences,
+            );
+	    Ok(BedrockCallSum::Jurrasic2BCS{model_id: String::from("ai21.j2-ultra-v1"), body: jurrasic_body})
+        },
+        "anthropic.claude-v2:1" | "anthropic.claude-v2" => {
+            let d = model_defaults.claude_v21;
             let claude_body = ClaudeBody::new(
                 format!("\n\nHuman: {}\n\nAssistant:", question).to_string(),
                 d.temperature, 
@@ -106,8 +133,8 @@ fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCal
                 d.max_tokens_to_sample, 
                 d.stop_sequences, 
             );
-	    Ok(BedrockCallSum::ClaudeBCS{model_id: String::from("anthropic.claude-v2"), body: claude_body})
-	},
+	    Ok(BedrockCallSum::ClaudeBCS{model_id: String::from("anthropic.claude-v2:1"), body: claude_body})
+        },
 	&_ => todo!()
     }
 }
@@ -121,9 +148,15 @@ fn mk_bedrock_call(question: String, model_id: &str) -> Result<BedrockCall> {
 
 // Given a question and model_id, create and execute a call to bedrock.
 // This will fail if model_id is not known to q_to_bcs_with_defaults
-pub async fn ask_bedrock(question: String, model_id: &str, client: Client) -> Result<()>{ 
+pub async fn ask_bedrock(question: String, model_id: &str, client: aws_sdk_bedrockruntime::Client, bedrock_client: aws_sdk_bedrock::Client ) -> Result<()>{ 
     let bcall = mk_bedrock_call(question, model_id)?;
-    call_bedrock_stream(client, bcall).await;
+    // check if model supports streaming:
+    if check_for_streaming(model_id.to_string(), bedrock_client).await? {
+        call_bedrock_stream(client, bcall).await?;
+    } else {
+        // if it does not just call it
+        call_bedrock(client, bcall).await?;
+    }
     Ok(())
 }
 
@@ -237,64 +270,108 @@ pub struct Llama2Response {
     generation: String,
 }
 //######################################## END CLAUDE
+//######################################## START JURRASIC
+#[derive(serde::Serialize, Debug)]
+pub struct Jurrasic2Body {
+    pub prompt: String,
+    pub temperature: f32,
+    pub topP: f32,
+    pub maxTokens: i32,
+    pub stopSequences: Vec<String>,
+}
+
+impl Jurrasic2Body {
+    pub fn new(prompt: String, temperature: f32, top_p: f32, max_tokens: i32, stop_sequences: Vec<String>) -> Jurrasic2Body {
+        Jurrasic2Body {
+            prompt,
+            temperature,
+            topP: top_p,
+            maxTokens: max_tokens,
+            stopSequences: stop_sequences
+        }
+    }
+
+    pub fn convert_to_blob(&self) -> Result<Blob> {
+        let blob_string = serde_json::to_vec(&self)?;
+        let body: Blob = Blob::new(blob_string);
+        Ok(body)
+    }
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct Jurrasic2ResponseCompletions {
+   completions: Vec<Jurrasic2ResponseData>,
+}
+#[derive(serde::Deserialize, Debug)]
+pub struct Jurrasic2ResponseData {
+   data: Jurrasic2ResponseText,
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct Jurrasic2ResponseText {
+   text: String,
+}
+//######################################## END JURRASIC
 //========================================
 
 
-pub fn convert_json(s: &str) -> Result<String> {
-    let v: Value = serde_json::from_str(s)?;
-    // future_highway: we convert to Option<&str>
-    // then using .ok_or() we get the &str
-    // then to get the String we use .to_string()
-    let response = v["generations"][0]["text"]
-        .as_str()
-        .ok_or(anyhow::anyhow!("Not really a string"))?
-        .to_string();
-    Ok(response)
-}
-
-pub async fn configure_aws(s: String) -> aws_config::SdkConfig {
-    let provider = RegionProviderChain::first_try(env::var("AWS_DEFAULT_REGION").ok().map(Region::new))
-        .or_default_provider()
-        .or_else(Region::new(s));
-
-    aws_config::defaults(BehaviorVersion::latest())
-        .region(provider)
-        .load()
-        .await
-
-}
-
 // this function is only called if we do not want the streaming result back.
 // so far this is here only for legacy reasons
-async fn call_bedrock(bc: Client, c: BedrockCall) -> Result<String>{
+async fn call_bedrock(bc: aws_sdk_bedrockruntime::Client, c: BedrockCall) -> Result<()>{
 
     let response = bc.invoke_model()
     .body(c.body)
     .content_type(c.content_type)
     .accept(c.accept)
-    .model_id(c.model_id)
+    .model_id(&c.model_id)
     .send()
     .await?;
+
 
     let response_body = response
         .body
         .into_inner();
 
-    let reponse_string = String::from_utf8(response_body)?;
-    Ok(reponse_string)
+    match c.model_id.as_str() {
+        "meta.llama2-70b-chat-v1" => {
+            if let Ok(response_body) = serde_json::from_slice::<Llama2Response>(response_body.as_ref()) {
+                println!("{}", response_body.generation);
+            }
+        },
+        "cohere.command-text-v14" => {
+            if let Ok(response_body) = serde_json::from_slice::<CohereResponseText>(response_body.as_ref()) { 
+                println!("{}", response_body.text);
+            }
+        },
+        "anthropic.claude-v2" | "anthropic.claude-v2:1" => {
+            if let Ok(response_body) = serde_json::from_slice::<ClaudeResponse>(response_body.as_ref()) {
+                println!("{}", response_body.completion);
+           }
+        },
+        "ai21.j2-ultra-v1" => {
+            if let Ok(response_body) = serde_json::from_slice::<Jurrasic2ResponseCompletions>(response_body.as_ref()) {
+                println!("{}", response_body.completions[0].data.text);
+            }
+        },
+        &_ => todo!()
+    }
+
+    Ok(())
 
 }
 
-async fn call_bedrock_stream(bc: Client, c: BedrockCall) -> Result<()>{
+async fn call_bedrock_stream(bc: aws_sdk_bedrockruntime::Client, c: BedrockCall) -> Result<()>{
 
     let mut resp =  bc.invoke_model_with_response_stream()
         .body(c.body)
         .content_type(c.content_type)
+        .accept(c.accept)
         .model_id(&c.model_id)
         .send()
         .await?;
 
     let mut output = String::new();
+
 
     while let Some(event) = resp.body.recv().await? {
         match event {
@@ -315,11 +392,18 @@ async fn call_bedrock_stream(bc: Client, c: BedrockCall) -> Result<()>{
                                 output += &good_response_chunk.text;
                             }
                         },
-                        "anthropic.claude-v2" => {
+                        "anthropic.claude-v2" | "anthropic.claude-v2:1" => {
                             if let Ok(good_response_chunk) = serde_json::from_slice::<ClaudeResponse>(payload_bytes.as_ref()) {
                                 print!("{}", good_response_chunk.completion);
                                 io::stdout().flush().unwrap();
                                 output += &good_response_chunk.completion;
+                            }
+                        },
+                        "ai21.j2-ultra-v1" => {
+                            if let Ok(good_response_chunk) = serde_json::from_slice::<Jurrasic2ResponseText>(payload_bytes.as_ref()) {
+                                print!("{}", good_response_chunk.text);
+                                io::stdout().flush().unwrap();
+                                output += &good_response_chunk.text;
                             }
                         },
                         &_ => todo!()

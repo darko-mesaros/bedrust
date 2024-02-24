@@ -15,14 +15,18 @@ pub enum ArgModels {
     Llama270b,
     CohereCommand,
     ClaudeV2,
+    ClaudeV21,
+    Jurrasic2Ultra,
 }
 
 impl ArgModels {
     pub fn to_str(&self) -> &'static str {
         match self {
             ArgModels::ClaudeV2 => "anthropic.claude-v2",
+            ArgModels::ClaudeV21 => "anthropic.claude-v2:1",
             ArgModels::Llama270b => "meta.llama2-70b-chat-v1",
             ArgModels::CohereCommand => "cohere.command-text-v14",
+            ArgModels::Jurrasic2Ultra => "ai21.j2-ultra-v1",
         }
     }
 }

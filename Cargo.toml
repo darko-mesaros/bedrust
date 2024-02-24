@@ -1,6 +1,6 @@
 [package]
 name = "bedrust"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.79"
 aws-config = { version = "1.1.5", features = ["behavior-version-latest"]}
+aws-sdk-bedrock = "1.15.0"
 aws-sdk-bedrockruntime = "1.14.0"
 aws-types = "1.1.5"
 clap = { version = "4.5.0", features = ["derive"] }
