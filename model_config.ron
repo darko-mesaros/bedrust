@@ -18,5 +18,13 @@ ModelConfigs(
       k: 250,
       max_tokens_to_sample: 500,
       stop_sequences: [],
+  ),
+  claude_v21:(
+      temperature: 1.0,
+      p: 1.0,
+      k: 250,
+      max_tokens_to_sample: 500,
+      stop_sequences: [],
   )
+
 )

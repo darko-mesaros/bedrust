@@ -96,6 +96,18 @@ fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCal
 
 	    Ok(BedrockCallSum::CohereBCS{model_id: String::from("cohere.command-text-v14"), body: cohere_body})
         },
+        "anthropic.claude-v2:1" => {
+            let d = model_defaults.claude_v21;
+            let claude_body = ClaudeBody::new(
+                format!("\n\nHuman: {}\n\nAssistant:", question).to_string(),
+                d.temperature, 
+                d.p, 
+                d.k, 
+                d.max_tokens_to_sample, 
+                d.stop_sequences, 
+            );
+	    Ok(BedrockCallSum::ClaudeBCS{model_id: String::from("anthropic.claude-v2"), body: claude_body})
+        },
         "anthropic.claude-v2" => {
             let d = model_defaults.claude_v2;
             let claude_body = ClaudeBody::new(
