@@ -31,5 +31,11 @@ ModelConfigs(
       top_p: 1,
       max_tokens: 200,
       stop_sequences: [],
+  ),
+  titan_text_express_v1:(
+      temperature: 0,
+      top_p: 1,
+      max_token_count: 8192,
+      stop_sequences: [],
   )
 )

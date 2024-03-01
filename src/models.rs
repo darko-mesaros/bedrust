@@ -13,6 +13,7 @@ pub struct ModelConfigs {
     pub claude_v2: ClaudeV2Config,
     pub claude_v21: ClaudeV21Config,
     pub jurrasic_2_ultra: Jurrasic2UltraConfig,
+    pub titan_text_express_v1: TitanTextExpressV1Config,
 }
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Llama270bConfig {
@@ -54,6 +55,14 @@ pub struct Jurrasic2UltraConfig {
     pub temperature: f32,
     pub top_p: f32,
     pub max_tokens: i32,
+    pub stop_sequences: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct TitanTextExpressV1Config {
+    pub temperature: f32,
+    pub top_p: f32,
+    pub max_token_count: i32,
     pub stop_sequences: Vec<String>,
 }
 

@@ -57,7 +57,8 @@ enum BedrockCallSum {
     CohereBCS { model_id: String, body: CohereBody},
     ClaudeBCS { model_id: String, body: ClaudeBody},
     Llama2BCS { model_id: String, body: Llama2Body},
-    Jurrasic2BCS { model_id: String, body: Jurrasic2Body}    
+    Jurrasic2BCS { model_id: String, body: Jurrasic2Body},
+    TitanTextBCS { model_id: String, body: TitanTextV1Body}    
 }
 
 // Using a sum type to represent all models that can go through here.
@@ -75,6 +76,9 @@ fn bcs_to_bedrock_call(bcs: BedrockCallSum) ->  Result<BedrockCall> {
             Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
         }
         BedrockCallSum::Jurrasic2BCS { model_id, body } => {
+            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
+        }
+        BedrockCallSum::TitanTextBCS { model_id, body } => {
             Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
         }
 	
@@ -137,6 +141,17 @@ fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCal
             );
 	    Ok(BedrockCallSum::ClaudeBCS{model_id: String::from("anthropic.claude-v2:1"), body: claude_body})
         },
+        "amazon.titan-text-express-v1" => {
+            let d = model_defaults.titan_text_express_v1;
+            let titan_body = TitanTextV1Body::new(
+                question.to_string(),
+                d.temperature, 
+                d.top_p, 
+                d.max_token_count,
+                d.stop_sequences, 
+            );
+	    Ok(BedrockCallSum::TitanTextBCS{model_id: String::from("amazon.titan-text-express-v1"), body: titan_body})
+        },
 	&_ => todo!()
     }
 }
@@ -151,6 +166,7 @@ fn mk_bedrock_call(question: String, model_id: &str) -> Result<BedrockCall> {
 // Given a question and model_id, create and execute a call to bedrock.
 // This will fail if model_id is not known to q_to_bcs_with_defaults
 pub async fn ask_bedrock(question: String, model_id: &str, client: aws_sdk_bedrockruntime::Client, bedrock_client: aws_sdk_bedrock::Client ) -> Result<()>{ 
+
     let bcall = mk_bedrock_call(question, model_id)?;
     // check if model supports streaming:
     if check_for_streaming(model_id.to_string(), bedrock_client).await? {
@@ -315,6 +331,55 @@ pub struct Jurrasic2ResponseText {
    text: String,
 }
 //######################################## END JURRASIC
+//######################################## START TITAN
+#[derive(serde::Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct TitanTextV1Body {
+    pub input_text: String,
+    pub text_generation_config: TitanTextV1textGenerationConfig
+}
+
+#[derive(serde::Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct TitanTextV1textGenerationConfig {
+    pub temperature: f32,
+    pub top_p: f32,
+    pub max_token_count: i32,
+    pub stop_sequences: Vec<String>,
+}
+
+impl TitanTextV1Body {
+    pub fn new(input_text: String, temperature: f32, top_p: f32, max_token_count: i32, stop_sequences: Vec<String>) -> TitanTextV1Body {
+        let text_gen_config = TitanTextV1textGenerationConfig {
+            temperature,
+            top_p,
+            max_token_count,
+            stop_sequences
+        };
+        TitanTextV1Body {
+            input_text,
+            text_generation_config: text_gen_config
+        }
+    }
+
+    pub fn convert_to_blob(&self) -> Result<Blob> {
+        let blob_string = serde_json::to_vec(&self)?;
+        let body: Blob = Blob::new(blob_string);
+        Ok(body)
+    }
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct TitanTextV1Response {
+   results: Vec<TitanTextV1Results>
+}
+
+#[derive(serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct TitanTextV1Results {
+   output_text: String,
+}
+//######################################## END TITAN
 //========================================
 
 
@@ -354,6 +419,11 @@ async fn call_bedrock(bc: aws_sdk_bedrockruntime::Client, c: BedrockCall) -> Res
         "ai21.j2-ultra-v1" => {
             if let Ok(response_body) = serde_json::from_slice::<Jurrasic2ResponseCompletions>(response_body.as_ref()) {
                 println!("{}", response_body.completions[0].data.text);
+            }
+        },
+        "amazon.titan-text-express-v1" => {
+            if let Ok(response_body) = serde_json::from_slice::<TitanTextV1Results>(response_body.as_ref()) {
+                println!("{}", response_body.output_text);
             }
         },
         &_ => todo!()
@@ -407,6 +477,13 @@ async fn call_bedrock_stream(bc: aws_sdk_bedrockruntime::Client, c: BedrockCall)
                                 print!("{}", good_response_chunk.text);
                                 io::stdout().flush().unwrap();
                                 output += &good_response_chunk.text;
+                            }
+                        },
+                        "amazon.titan-text-express-v1" => {
+                            if let Ok(good_response_chunk) = serde_json::from_slice::<TitanTextV1Results>(payload_bytes.as_ref()) {
+                                print!("{}", good_response_chunk.output_text);
+                                io::stdout().flush().unwrap();
+                                output += &good_response_chunk.output_text;
                             }
                         },
                         &_ => todo!()

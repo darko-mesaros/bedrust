@@ -9,6 +9,7 @@ Currently supporting the following models:
 - Llama2 70B
 - Cohere Command
 - Jurrasic 2 Ultra
+- Titan Text Express V1
 
 ## Usage
 
@@ -16,7 +17,7 @@ Currently supporting the following models:
 Usage: bedrust --model-id <MODEL_ID>
 
 Options:
-  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2]
+  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, jurrasic2-ultra, titan-text-express-v1]
   -h, --help                 Print help
   -V, --version              Print version
 ```
