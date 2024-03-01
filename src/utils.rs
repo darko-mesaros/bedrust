@@ -17,6 +17,7 @@ pub enum ArgModels {
     ClaudeV2,
     ClaudeV21,
     Jurrasic2Ultra,
+    TitanTextExpressV1,
 }
 
 impl ArgModels {
@@ -27,6 +28,7 @@ impl ArgModels {
             ArgModels::Llama270b => "meta.llama2-70b-chat-v1",
             ArgModels::CohereCommand => "cohere.command-text-v14",
             ArgModels::Jurrasic2Ultra => "ai21.j2-ultra-v1",
+            ArgModels::TitanTextExpressV1 => "amazon.titan-text-express-v1",
         }
     }
 }
