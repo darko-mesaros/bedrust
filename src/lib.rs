@@ -3,6 +3,7 @@ mod models;
 use aws_config::meta::region::RegionProviderChain;
 use aws_config::BehaviorVersion;
 use aws_types::region::Region;
+use serde::ser::Error;
 use core::panic;
 use std::{env, io};
 
@@ -59,7 +60,6 @@ enum BedrockCallSum {
     Llama2BCS { model_id: String, body: Llama2Body},
     Jurrasic2BCS { model_id: String, body: Jurrasic2Body},
     TitanTextBCS { model_id: String, body: TitanTextV1Body},
-    Mixtral8x7bBCS { model_id: String, body: Mixtral8x7Body},
     Mistral7bBCS { model_id: String, body: Mistral7Body}
 }
 
@@ -81,9 +81,6 @@ fn bcs_to_bedrock_call(bcs: BedrockCallSum) ->  Result<BedrockCall> {
             Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
         }
         BedrockCallSum::TitanTextBCS { model_id, body } => {
-            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
-        }
-        BedrockCallSum::Mixtral8x7bBCS { model_id, body } => {
             Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
         }
         BedrockCallSum::Mistral7bBCS { model_id, body } => {
@@ -137,7 +134,19 @@ fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCal
             );
 	    Ok(BedrockCallSum::Jurrasic2BCS{model_id: String::from("ai21.j2-ultra-v1"), body: jurrasic_body})
         },
-        "anthropic.claude-v2:1" | "anthropic.claude-v2" => {
+        "anthropic.claude-v2" => {
+            let d = model_defaults.claude_v2;
+            let claude_body = ClaudeBody::new(
+                format!("\n\nHuman: {}\n\nAssistant:", question).to_string(),
+                d.temperature, 
+                d.p, 
+                d.k, 
+                d.max_tokens_to_sample, 
+                d.stop_sequences, 
+            );
+	    Ok(BedrockCallSum::ClaudeBCS{model_id: String::from("anthropic.claude-v2"), body: claude_body})
+        },
+        "anthropic.claude-v2:1" => {
             let d = model_defaults.claude_v21;
             let claude_body = ClaudeBody::new(
                 format!("\n\nHuman: {}\n\nAssistant:", question).to_string(),
@@ -162,7 +171,7 @@ fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCal
         },
         "mistral.mixtral-8x7b-instruct-v0:1" => {
             let d = model_defaults.mixtral_8x7b_instruct;
-            let mixtral_body = Mixtral8x7Body::new(
+            let mixtral_body = Mistral7Body::new(
                 question.to_string(),
                 d.temperature, 
                 d.top_p, 
@@ -170,7 +179,7 @@ fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCal
                 d.max_tokens,
                 d.stop, 
             );
-	    Ok(BedrockCallSum::Mixtral8x7bBCS{model_id: String::from("mistral.mixtral-8x7b-instruct-v0:1"), body: mixtral_body})
+	    Ok(BedrockCallSum::Mistral7bBCS{model_id: String::from("mistral.mixtral-8x7b-instruct-v0:1"), body: mixtral_body})
         },
         "mistral.mistral-7b-instruct-v0:2" => {
             let d = model_defaults.mistral_7b_instruct;
@@ -401,7 +410,7 @@ impl TitanTextV1Body {
     }
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize)]
 pub struct TitanTextV1Response {
    results: Vec<TitanTextV1Results>
 }
@@ -412,46 +421,6 @@ pub struct TitanTextV1Results {
    output_text: String,
 }
 //######################################## END TITAN
-//######################################## START MIXTRAL
-#[derive(serde::Serialize, Debug)]
-pub struct Mixtral8x7Body {
-    pub prompt: String,
-    pub temperature: f32,
-    pub top_p: f32,
-    pub top_k: i32,
-    pub max_tokens: i32,
-    pub stop: Vec<String>,
-}
-
-impl Mixtral8x7Body {
-    pub fn new(prompt: String, temperature: f32, top_p: f32, top_k: i32, max_tokens: i32, stop: Vec<String>) -> Mixtral8x7Body {
-        Mixtral8x7Body {
-            prompt,
-            temperature,
-            top_p,
-            top_k,
-            max_tokens,
-            stop,
-        }
-    }
-
-    pub fn convert_to_blob(&self) -> Result<Blob> {
-        let blob_string = serde_json::to_vec(&self)?;
-        let body: Blob = Blob::new(blob_string);
-        Ok(body)
-    }
-}
-
-#[derive(serde::Deserialize, Debug)]
-pub struct Mixtral8x7Results {
-   outputs: Vec<Mixtral8x7Outputs>
-}
-
-#[derive(serde::Deserialize, Debug)]
-pub struct Mixtral8x7Outputs {
-   text: String,
-}
-//######################################## END MIXTRAL
 //######################################## START MISTRAL
 #[derive(serde::Serialize, Debug)]
 pub struct Mistral7Body {
@@ -491,9 +460,26 @@ pub struct Mistral7Results {
 pub struct Mistral7Outputs {
    text: String,
 }
-//######################################## END MIXTRAL
+//######################################## END MISTRAL
 //========================================
 
+fn process_response(model_id: &str, payload_bytes: &[u8]) -> Result<String, serde_json::Error> {
+    match model_id {
+        "meta.llama2-70b-chat-v1" => serde_json::from_slice::<Llama2Response>(payload_bytes)
+            .map(|res| res.generation),
+        "cohere.command-text-v14" => serde_json::from_slice::<CohereResponseText>(payload_bytes)
+            .map(|res| res.text),
+        "anthropic.claude-v2" | "anthropic.claude-v2:1" => serde_json::from_slice::<ClaudeResponse>(payload_bytes)
+            .map(|res| res.completion),
+        "ai21.j2-ultra-v1" => serde_json::from_slice::<Jurrasic2ResponseCompletions>(payload_bytes)
+            .map(|res| res.completions[0].data.text.clone()),
+        "amazon.titan-text-express-v1" => serde_json::from_slice::<TitanTextV1Results>(payload_bytes)
+            .map(|res| res.output_text),
+        "mistral.mixtral-8x7b-instruct-v0:1" | "mistral.mistral-7b-instruct-v0:2" => serde_json::from_slice::<Mistral7Results>(payload_bytes)
+            .map(|res| res.outputs[0].text.clone()),
+        &_ => Err(serde_json::Error::custom("Unknown model ID")),
+    }
+}
 
 // this function is only called if we do not want the streaming result back.
 // so far this is here only for legacy reasons
@@ -507,48 +493,13 @@ async fn call_bedrock(bc: aws_sdk_bedrockruntime::Client, c: BedrockCall) -> Res
     .send()
     .await?;
 
-
-    let response_body = response
-        .body
-        .into_inner();
-
-    match c.model_id.as_str() {
-        "meta.llama2-70b-chat-v1" => {
-            if let Ok(response_body) = serde_json::from_slice::<Llama2Response>(response_body.as_ref()) {
-                println!("{}", response_body.generation);
-            }
+    let response_text = process_response(c.model_id.as_str(), response.body.as_ref());
+    match response_text {
+        Ok(text) => {
+            print!("{}", text);
+            io::stdout().flush().unwrap();
         },
-        "cohere.command-text-v14" => {
-            if let Ok(response_body) = serde_json::from_slice::<CohereResponseText>(response_body.as_ref()) { 
-                println!("{}", response_body.text);
-            }
-        },
-        "anthropic.claude-v2" | "anthropic.claude-v2:1" => {
-            if let Ok(response_body) = serde_json::from_slice::<ClaudeResponse>(response_body.as_ref()) {
-                println!("{}", response_body.completion);
-           }
-        },
-        "ai21.j2-ultra-v1" => {
-            if let Ok(response_body) = serde_json::from_slice::<Jurrasic2ResponseCompletions>(response_body.as_ref()) {
-                println!("{}", response_body.completions[0].data.text);
-            }
-        },
-        "amazon.titan-text-express-v1" => {
-            if let Ok(response_body) = serde_json::from_slice::<TitanTextV1Results>(response_body.as_ref()) {
-                println!("{}", response_body.output_text);
-            }
-        },
-        "mistral.mixtral-8x7b-instruct-v0:1" => {
-            if let Ok(response_body) = serde_json::from_slice::<Mixtral8x7Outputs>(response_body.as_ref()) {
-                println!("{}", response_body.text);
-            }
-        },
-        "mistral.mistral-7b-instruct-v0:2" => {
-            if let Ok(response_body) = serde_json::from_slice::<Mistral7Outputs>(response_body.as_ref()) {
-                println!("{}", response_body.text);
-            }
-        },
-        &_ => todo!()
+        Err(e) => eprintln!("Error processing response: {}", e),
     }
 
     Ok(())
@@ -572,57 +523,14 @@ async fn call_bedrock_stream(bc: aws_sdk_bedrockruntime::Client, c: BedrockCall)
         match event {
             ResponseStream::Chunk(payload_part) => {
                 if let Some(payload_bytes) = payload_part.bytes {
-                    match c.model_id.as_str()  {
-                        "meta.llama2-70b-chat-v1" => {
-                            if let Ok(good_response_chunk) = serde_json::from_slice::<Llama2Response>(payload_bytes.as_ref()) {
-                                print!("{}", good_response_chunk.generation);
-                                io::stdout().flush().unwrap();
-                                output += &good_response_chunk.generation;
-                            }
+                    let response_text = process_response(c.model_id.as_str(), payload_bytes.as_ref());
+                    match response_text {
+                        Ok(text) => {
+                            print!("{}", text);
+                            io::stdout().flush().unwrap();
+                            output += &text;
                         },
-                        "cohere.command-text-v14" => {
-                            if let Ok(good_response_chunk) = serde_json::from_slice::<CohereResponseText>(payload_bytes.as_ref()) {
-                                print!("{}", good_response_chunk.text);
-                                io::stdout().flush().unwrap();
-                                output += &good_response_chunk.text;
-                            }
-                        },
-                        "anthropic.claude-v2" | "anthropic.claude-v2:1" => {
-                            if let Ok(good_response_chunk) = serde_json::from_slice::<ClaudeResponse>(payload_bytes.as_ref()) {
-                                print!("{}", good_response_chunk.completion);
-                                io::stdout().flush().unwrap();
-                                output += &good_response_chunk.completion;
-                            }
-                        },
-                        "ai21.j2-ultra-v1" => {
-                            if let Ok(good_response_chunk) = serde_json::from_slice::<Jurrasic2ResponseText>(payload_bytes.as_ref()) {
-                                print!("{}", good_response_chunk.text);
-                                io::stdout().flush().unwrap();
-                                output += &good_response_chunk.text;
-                            }
-                        },
-                        "amazon.titan-text-express-v1" => {
-                            if let Ok(good_response_chunk) = serde_json::from_slice::<TitanTextV1Results>(payload_bytes.as_ref()) {
-                                print!("{}", good_response_chunk.output_text);
-                                io::stdout().flush().unwrap();
-                                output += &good_response_chunk.output_text;
-                            }
-                        },
-                        "mistral.mixtral-8x7b-instruct-v0:1" => {
-                            if let Ok(good_response_chunk) = serde_json::from_slice::<Mixtral8x7Results>(payload_bytes.as_ref()) {
-                                print!("{}", good_response_chunk.outputs[0].text);
-                                io::stdout().flush().unwrap();
-                                output += &good_response_chunk.outputs[0].text;
-                            }
-                        },
-                        "mistral.mistral-7b-instruct-v0:2" => {
-                            if let Ok(good_response_chunk) = serde_json::from_slice::<Mistral7Results>(payload_bytes.as_ref()) {
-                                print!("{}", good_response_chunk.outputs[0].text);
-                                io::stdout().flush().unwrap();
-                                output += &good_response_chunk.outputs[0].text;
-                            }
-                        },
-                        &_ => todo!()
+                        Err(e) => eprintln!("Error processing response: {}", e),
                     }
                 }
             },
