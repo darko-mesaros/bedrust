@@ -23,7 +23,7 @@ async fn main() -> Result<()>{
     //let question = "Which songs are listed in the youtube video 'evolution of dance'?";
     let model_id = arguments.model_id.to_str();
 
-    utils::hello_header("Welcome to Bedrust");
+    utils::hello_header("Welcome to Bedrust")?;
     // get user input
     let mut question = String::new();
     println!("----------------------------------------");
