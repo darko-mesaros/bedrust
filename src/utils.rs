@@ -1,6 +1,10 @@
 use figlet_rs::FIGfont;
 use clap::Parser;
 
+use std::io;
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+
+
 // ######################################## ARGUMENT PARSING
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -38,10 +42,16 @@ impl ArgModels {
 }
 // ######################################## END ARGUMENT PARSING
 
-pub fn hello_header(s: &str) {
+pub fn hello_header(s: &str) -> io::Result<()> {
 
     let ansi_font = FIGfont::from_file("resources/ansishadow.flf").unwrap();
     let hello = ansi_font.convert(s);
+
+    let mut stdout = StandardStream::stdout(ColorChoice::Always);
+    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(255,153,0))))?;
     println!("{}", hello.unwrap());
+    stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
+
+    Ok(())
 
 }
