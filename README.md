@@ -12,6 +12,43 @@ Currently supporting the following models:
 - Titan Text Express V1
 - Mistral AI models (Mixtral and Mistral)
 
+## Getting Started
+
+To get started using this you need to do a few things:
+
+### Get AWS credentials configured locally ☁️
+
+To be able to interact with [Amazon Bedrock]() you need to have a set of AWS Credentials on the machine **Bedrust** will run on. The easiest way to get this set up, is by configuring the [AWS CLI](https://aws.amazon.com/cli/). Make sure to install the AWS CLI, and run the `aws configure` [command](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) to set your credentials.
+
+To verify if you have your AWS credentials set correctly, you can run `aws sts get-caller-identity`:
+```bash
+darko@devbox [~/workspace/projects/bedrust]: aws sts get-caller-identity                                                                                                                                                                                       (new_instructions)
+{
+    "UserId": "AIDAXXXXXXXXXXXXXXXXXX5",
+    "Account": "123456789999999",
+    "Arn": "arn:aws:iam::123456789999999:user/alan-ford"
+}
+```
+Oh, yeah, make sure the user whose credentials you configure has permissions to `InvokeModel` on Amazon Bedrock.
+
+### Make sure you have Rust installed 🦀
+
+Well that just makes sense, this is a **Rust** application. The easiest way to get started is by using [rustup](https://www.rust-lang.org/tools/install)
+
+### Clone the Repository 💾
+
+As of this date, there is no way to *install* this tool to your machine in a traditional sense. Some elements are hardcoded paths (ie the `model_config.ron` file). And thus, the way you use **Bedrust** is by cloning this repository somewhere locally:
+```
+git clone https://github.com/darko-mesaros/bedrust && cd bedrust
+```
+
+### Running the application 🚀
+
+Finally, to run the application just use the following `cargo` command:
+```bash
+cargo run -- -m <MODELNAME> # replacing the model name with one of the supported ones
+```
+
 ## Usage
 ```bash
 Usage: bedrust --model-id <MODEL_ID>
