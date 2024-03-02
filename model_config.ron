@@ -44,5 +44,12 @@ ModelConfigs(
       top_k: 200,
       max_tokens: 1024,
       stop: [],
+  ),
+  mistral_7b_instruct:(
+      temperature: 0.5,
+      top_p: 0.9,
+      top_k: 200,
+      max_tokens: 1024,
+      stop: [],
   )
 )

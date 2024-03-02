@@ -59,7 +59,8 @@ enum BedrockCallSum {
     Llama2BCS { model_id: String, body: Llama2Body},
     Jurrasic2BCS { model_id: String, body: Jurrasic2Body},
     TitanTextBCS { model_id: String, body: TitanTextV1Body},
-    Mixtral8x7bBCS { model_id: String, body: Mixtral8x7Body}
+    Mixtral8x7bBCS { model_id: String, body: Mixtral8x7Body},
+    Mistral7bBCS { model_id: String, body: Mistral7Body}
 }
 
 // Using a sum type to represent all models that can go through here.
@@ -83,6 +84,9 @@ fn bcs_to_bedrock_call(bcs: BedrockCallSum) ->  Result<BedrockCall> {
             Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
         }
         BedrockCallSum::Mixtral8x7bBCS { model_id, body } => {
+            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
+        }
+        BedrockCallSum::Mistral7bBCS { model_id, body } => {
             Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
         }
 	
@@ -167,6 +171,18 @@ fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCal
                 d.stop, 
             );
 	    Ok(BedrockCallSum::Mixtral8x7bBCS{model_id: String::from("mistral.mixtral-8x7b-instruct-v0:1"), body: mixtral_body})
+        },
+        "mistral.mistral-7b-instruct-v0:2" => {
+            let d = model_defaults.mistral_7b_instruct;
+            let mixtral_body = Mistral7Body::new(
+                question.to_string(),
+                d.temperature, 
+                d.top_p, 
+                d.top_k, 
+                d.max_tokens,
+                d.stop, 
+            );
+	    Ok(BedrockCallSum::Mistral7bBCS{model_id: String::from("mistral.mistral-7b-instruct-v0:2"), body: mixtral_body})
         },
 	&_ => todo!()
     }
@@ -435,7 +451,47 @@ pub struct Mixtral8x7Results {
 pub struct Mixtral8x7Outputs {
    text: String,
 }
-//######################################## END TITAN
+//######################################## END MIXTRAL
+//######################################## START MISTRAL
+#[derive(serde::Serialize, Debug)]
+pub struct Mistral7Body {
+    pub prompt: String,
+    pub temperature: f32,
+    pub top_p: f32,
+    pub top_k: i32,
+    pub max_tokens: i32,
+    pub stop: Vec<String>,
+}
+
+impl Mistral7Body {
+    pub fn new(prompt: String, temperature: f32, top_p: f32, top_k: i32, max_tokens: i32, stop: Vec<String>) -> Mistral7Body {
+        Mistral7Body {
+            prompt,
+            temperature,
+            top_p,
+            top_k,
+            max_tokens,
+            stop,
+        }
+    }
+
+    pub fn convert_to_blob(&self) -> Result<Blob> {
+        let blob_string = serde_json::to_vec(&self)?;
+        let body: Blob = Blob::new(blob_string);
+        Ok(body)
+    }
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct Mistral7Results {
+   outputs: Vec<Mistral7Outputs>
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct Mistral7Outputs {
+   text: String,
+}
+//######################################## END MIXTRAL
 //========================================
 
 
@@ -484,6 +540,11 @@ async fn call_bedrock(bc: aws_sdk_bedrockruntime::Client, c: BedrockCall) -> Res
         },
         "mistral.mixtral-8x7b-instruct-v0:1" => {
             if let Ok(response_body) = serde_json::from_slice::<Mixtral8x7Outputs>(response_body.as_ref()) {
+                println!("{}", response_body.text);
+            }
+        },
+        "mistral.mistral-7b-instruct-v0:2" => {
+            if let Ok(response_body) = serde_json::from_slice::<Mistral7Outputs>(response_body.as_ref()) {
                 println!("{}", response_body.text);
             }
         },
@@ -549,6 +610,13 @@ async fn call_bedrock_stream(bc: aws_sdk_bedrockruntime::Client, c: BedrockCall)
                         },
                         "mistral.mixtral-8x7b-instruct-v0:1" => {
                             if let Ok(good_response_chunk) = serde_json::from_slice::<Mixtral8x7Results>(payload_bytes.as_ref()) {
+                                print!("{}", good_response_chunk.outputs[0].text);
+                                io::stdout().flush().unwrap();
+                                output += &good_response_chunk.outputs[0].text;
+                            }
+                        },
+                        "mistral.mistral-7b-instruct-v0:2" => {
+                            if let Ok(good_response_chunk) = serde_json::from_slice::<Mistral7Results>(payload_bytes.as_ref()) {
                                 print!("{}", good_response_chunk.outputs[0].text);
                                 io::stdout().flush().unwrap();
                                 output += &good_response_chunk.outputs[0].text;

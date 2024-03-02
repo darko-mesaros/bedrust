@@ -10,18 +10,17 @@ Currently supporting the following models:
 - Cohere Command
 - Jurrasic 2 Ultra
 - Titan Text Express V1
+- Mistral AI models (Mixtral and Mistral)
 
 ## Usage
-
 ```bash
 Usage: bedrust --model-id <MODEL_ID>
 
 Options:
-  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, jurrasic2-ultra, titan-text-express-v1]
+  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, claude-v21, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct]
   -h, --help                 Print help
   -V, --version              Print version
 ```
-
 Once, prompted enter your question, and hit `ENTER`. 🚀
 
 ## TODO

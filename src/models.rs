@@ -15,6 +15,7 @@ pub struct ModelConfigs {
     pub jurrasic_2_ultra: Jurrasic2UltraConfig,
     pub titan_text_express_v1: TitanTextExpressV1Config,
     pub mixtral_8x7b_instruct: Mixtral8x7bInstruct,
+    pub mistral_7b_instruct: Mistral7bInstruct,
 }
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Llama270bConfig {
@@ -69,6 +70,14 @@ pub struct TitanTextExpressV1Config {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Mixtral8x7bInstruct {
+    pub temperature: f32,
+    pub top_p: f32,
+    pub top_k: i32,
+    pub max_tokens: i32,
+    pub stop: Vec<String>,
+}
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Mistral7bInstruct {
     pub temperature: f32,
     pub top_p: f32,
     pub top_k: i32,
