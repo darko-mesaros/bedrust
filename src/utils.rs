@@ -18,6 +18,8 @@ pub enum ArgModels {
     ClaudeV21,
     Jurrasic2Ultra,
     TitanTextExpressV1,
+    Mixtral8x7bInstruct,
+    Mistral7bInstruct,
 }
 
 impl ArgModels {
@@ -29,6 +31,8 @@ impl ArgModels {
             ArgModels::CohereCommand => "cohere.command-text-v14",
             ArgModels::Jurrasic2Ultra => "ai21.j2-ultra-v1",
             ArgModels::TitanTextExpressV1 => "amazon.titan-text-express-v1",
+            ArgModels::Mixtral8x7bInstruct => "mistral.mixtral-8x7b-instruct-v0:1",
+            ArgModels::Mistral7bInstruct => "mistral.mistral-7b-instruct-v0:2",
         }
     }
 }
