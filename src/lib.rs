@@ -1,4 +1,4 @@
-mod models;
+pub mod models;
 
 use aws_config::meta::region::RegionProviderChain;
 use aws_config::BehaviorVersion;
@@ -14,6 +14,13 @@ use aws_sdk_bedrockruntime::types::ResponseStream;
 
 use models::check_for_streaming;
 use models::load_config;
+
+use models::cohere::{CohereBody, CohereResponseText};
+use models::claude::{ClaudeBody, ClaudeResponse};
+use models::llama2::{Llama2Body, Llama2Response};
+use models::jurrasic2::{Jurrasic2Body, Jurrasic2ResponseCompletions};
+use models::titan::{TitanTextV1Body, TitanTextV1Results};
+use models::mistral::{Mistral7Body, Mistral7Results};
 
 use std::io::Write;
 
@@ -219,248 +226,6 @@ pub async fn ask_bedrock(question: String, model_id: &str, client: aws_sdk_bedro
     Ok(())
 }
 
-//######################################## COHERE
-
-#[derive(serde::Serialize, Debug)]
-pub struct CohereBody {
-    pub prompt: String,
-    pub max_tokens: i32,
-    pub temperature: f32,
-    pub p: f32,
-    pub k: i32,
-    pub stop_sequences: Vec<String>,
-    pub stream: bool,
-}
-
-impl CohereBody {
-    pub fn new(prompt: String, max_tokens: i32, temperature: f32, p: f32, k: i32, stop_sequences: Vec<String>, stream: bool) -> CohereBody {
-        CohereBody {
-            prompt,
-            max_tokens,
-            temperature,
-            p,
-            k,
-            stop_sequences,
-            stream,
-        }
-    }
-
-    pub fn convert_to_blob(&self) -> Result<Blob> {
-        let blob_string = serde_json::to_vec(&self)?;
-        let body: Blob = Blob::new(blob_string);
-        Ok(body)
-    }
-}
-
-#[derive(serde::Deserialize)]
-pub struct CohereResponseGenerations {
-    generations: Vec<CohereResponseText>,
-}
-#[derive(serde::Deserialize, Debug)]
-pub struct CohereResponseText {
-    text: String,
-}
-//######################################## END COHERE
-
-//######################################## CLAUDE
-#[derive(serde::Serialize, Debug)]
-pub struct ClaudeBody {
-    pub prompt: String,
-    pub temperature: f32,
-    pub top_p: f32,
-    pub top_k: i32,
-    pub max_tokens_to_sample: i32,
-    pub stop_sequences: Vec<String>,
-}
-
-impl ClaudeBody {
-    pub fn new(prompt: String, temperature: f32, top_p: f32, top_k: i32, max_tokens_to_sample: i32, stop_sequences: Vec<String>) -> ClaudeBody {
-        ClaudeBody {
-            prompt,
-            temperature,
-            top_p,
-            top_k,
-            max_tokens_to_sample,
-            stop_sequences,
-        }
-    }
-
-    pub fn convert_to_blob(&self) -> Result<Blob> {
-        let blob_string = serde_json::to_vec(&self)?;
-        let body: Blob = Blob::new(blob_string);
-        Ok(body)
-    }
-}
-
-#[derive(serde::Deserialize, Debug)]
-pub struct ClaudeResponse {
-    completion: String,
-}
-//######################################## END CLAUDE
-//
-//######################################## LLAMA2
-#[derive(serde::Serialize, Debug)]
-pub struct Llama2Body {
-    pub prompt: String,
-    pub temperature: f32,
-    pub top_p: f32,
-    pub max_gen_len: i32,
-}
-
-impl Llama2Body {
-    pub fn new(prompt: String, temperature: f32, top_p: f32, max_gen_len: i32) -> Llama2Body {
-        Llama2Body {
-            prompt,
-            temperature,
-            top_p,
-            max_gen_len,
-        }
-    }
-
-    pub fn convert_to_blob(&self) -> Result<Blob> {
-        let blob_string = serde_json::to_vec(&self)?;
-        let body: Blob = Blob::new(blob_string);
-        Ok(body)
-    }
-}
-
-#[derive(serde::Deserialize, Debug)]
-pub struct Llama2Response {
-    generation: String,
-}
-//######################################## END CLAUDE
-//######################################## START JURRASIC
-#[derive(serde::Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct Jurrasic2Body {
-    pub prompt: String,
-    pub temperature: f32,
-    pub top_p: f32,
-    pub max_tokens: i32,
-    pub stop_sequences: Vec<String>,
-}
-
-impl Jurrasic2Body {
-    pub fn new(prompt: String, temperature: f32, top_p: f32, max_tokens: i32, stop_sequences: Vec<String>) -> Jurrasic2Body {
-        Jurrasic2Body {
-            prompt,
-            temperature,
-            top_p,
-            max_tokens,
-            stop_sequences
-        }
-    }
-
-    pub fn convert_to_blob(&self) -> Result<Blob> {
-        let blob_string = serde_json::to_vec(&self)?;
-        let body: Blob = Blob::new(blob_string);
-        Ok(body)
-    }
-}
-
-#[derive(serde::Deserialize, Debug)]
-pub struct Jurrasic2ResponseCompletions {
-   completions: Vec<Jurrasic2ResponseData>,
-}
-#[derive(serde::Deserialize, Debug)]
-pub struct Jurrasic2ResponseData {
-   data: Jurrasic2ResponseText,
-}
-
-#[derive(serde::Deserialize, Debug)]
-pub struct Jurrasic2ResponseText {
-   text: String,
-}
-//######################################## END JURRASIC
-//######################################## START TITAN
-#[derive(serde::Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct TitanTextV1Body {
-    pub input_text: String,
-    pub text_generation_config: TitanTextV1textGenerationConfig
-}
-
-#[derive(serde::Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct TitanTextV1textGenerationConfig {
-    pub temperature: f32,
-    pub top_p: f32,
-    pub max_token_count: i32,
-    pub stop_sequences: Vec<String>,
-}
-
-impl TitanTextV1Body {
-    pub fn new(input_text: String, temperature: f32, top_p: f32, max_token_count: i32, stop_sequences: Vec<String>) -> TitanTextV1Body {
-        let text_gen_config = TitanTextV1textGenerationConfig {
-            temperature,
-            top_p,
-            max_token_count,
-            stop_sequences
-        };
-        TitanTextV1Body {
-            input_text,
-            text_generation_config: text_gen_config
-        }
-    }
-
-    pub fn convert_to_blob(&self) -> Result<Blob> {
-        let blob_string = serde_json::to_vec(&self)?;
-        let body: Blob = Blob::new(blob_string);
-        Ok(body)
-    }
-}
-
-#[derive(serde::Deserialize)]
-pub struct TitanTextV1Response {
-   results: Vec<TitanTextV1Results>
-}
-
-#[derive(serde::Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct TitanTextV1Results {
-   output_text: String,
-}
-//######################################## END TITAN
-//######################################## START MISTRAL
-#[derive(serde::Serialize, Debug)]
-pub struct Mistral7Body {
-    pub prompt: String,
-    pub temperature: f32,
-    pub top_p: f32,
-    pub top_k: i32,
-    pub max_tokens: i32,
-    pub stop: Vec<String>,
-}
-
-impl Mistral7Body {
-    pub fn new(prompt: String, temperature: f32, top_p: f32, top_k: i32, max_tokens: i32, stop: Vec<String>) -> Mistral7Body {
-        Mistral7Body {
-            prompt,
-            temperature,
-            top_p,
-            top_k,
-            max_tokens,
-            stop,
-        }
-    }
-
-    pub fn convert_to_blob(&self) -> Result<Blob> {
-        let blob_string = serde_json::to_vec(&self)?;
-        let body: Blob = Blob::new(blob_string);
-        Ok(body)
-    }
-}
-
-#[derive(serde::Deserialize, Debug)]
-pub struct Mistral7Results {
-   outputs: Vec<Mistral7Outputs>
-}
-
-#[derive(serde::Deserialize, Debug)]
-pub struct Mistral7Outputs {
-   text: String,
-}
-//######################################## END MISTRAL
 //========================================
 
 fn process_response(model_id: &str, payload_bytes: &[u8]) -> Result<String, serde_json::Error> {
@@ -482,7 +247,7 @@ fn process_response(model_id: &str, payload_bytes: &[u8]) -> Result<String, serd
 }
 
 // this function is only called if we do not want the streaming result back.
-// so far this is here only for legacy reasons
+// so far this is here only for models that do not support streaming (ie Jurrasic2Ultra)
 async fn call_bedrock(bc: aws_sdk_bedrockruntime::Client, c: BedrockCall) -> Result<()>{
 
     let response = bc.invoke_model()
@@ -517,7 +282,6 @@ async fn call_bedrock_stream(bc: aws_sdk_bedrockruntime::Client, c: BedrockCall)
         .await?;
 
     let mut output = String::new();
-
 
     while let Some(event) = resp.body.recv().await? {
         match event {
