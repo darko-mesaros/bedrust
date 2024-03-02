@@ -22,7 +22,7 @@ To be able to interact with [Amazon Bedrock]() you need to have a set of AWS Cre
 
 To verify if you have your AWS credentials set correctly, you can run `aws sts get-caller-identity`:
 ```bash
-darko@devbox [~/workspace/projects/bedrust]: aws sts get-caller-identity                                                                                                                                                                                       (new_instructions)
+darko@devbox [~/workspace/projects/bedrust]: aws sts get-caller-identity
 {
     "UserId": "AIDAXXXXXXXXXXXXXXXXXX5",
     "Account": "123456789999999",
