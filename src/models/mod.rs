@@ -1,6 +1,7 @@
 pub mod llama2;
 pub mod cohere;
 pub mod claude;
+pub mod claudev3;
 pub mod jurrasic2;
 pub mod titan;
 pub mod mistral;
@@ -8,6 +9,7 @@ pub mod mistral;
 use llama2::Llama270bConfig;
 use cohere::CohereCommandConfig;
 use claude::{ClaudeV2Config, ClaudeV21Config};
+use claudev3::ClaudeV3Config;
 use jurrasic2::Jurrasic2UltraConfig;
 use titan::TitanTextExpressV1Config;
 use mistral::{Mistral7bInstruct, Mixtral8x7bInstruct};
@@ -26,6 +28,7 @@ pub struct ModelConfigs {
     pub cohere_command: CohereCommandConfig,
     pub claude_v2: ClaudeV2Config,
     pub claude_v21: ClaudeV21Config,
+    pub claude_v3: ClaudeV3Config,
     pub jurrasic_2_ultra: Jurrasic2UltraConfig,
     pub titan_text_express_v1: TitanTextExpressV1Config,
     pub mixtral_8x7b_instruct: Mixtral8x7bInstruct,
