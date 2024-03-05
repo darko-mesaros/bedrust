@@ -26,6 +26,11 @@ ModelConfigs(
       max_tokens_to_sample: 500,
       stop_sequences: [],
   ),
+ claude_v3:(
+      anthropic_version: "bedrock-2023-05-31",
+      max_tokens: 1000,
+      role: "user",
+  ),
   jurrasic_2_ultra:(
       temperature: 0.7,
       top_p: 1,

@@ -6,6 +6,7 @@ A "practical" way to invoke models on Amazon Bedrock. Written in Rust, and LIVE 
 
 Currently supporting the following models:
 - Claude V2
+- **Claude V3 Sonnet**
 - Llama2 70B
 - Cohere Command
 - Jurrasic 2 Ultra
@@ -54,7 +55,7 @@ cargo run -- -m <MODELNAME> # replacing the model name with one of the supported
 Usage: bedrust --model-id <MODEL_ID>
 
 Options:
-  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, claude-v21, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct]
+  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, claude-v21, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct, claude-v3-sonnet]
   -h, --help                 Print help
   -V, --version              Print version
 ```

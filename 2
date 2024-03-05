@@ -3,9 +3,7 @@ pub mod models;
 use aws_config::meta::region::RegionProviderChain;
 use aws_config::BehaviorVersion;
 use aws_types::region::Region;
-use serde::Deserialize;
 use serde::ser::Error;
-use serde_json::Value;
 use core::panic;
 use std::{env, io};
 
@@ -19,7 +17,6 @@ use models::load_config;
 
 use models::cohere::{CohereBody, CohereResponseText};
 use models::claude::{ClaudeBody, ClaudeResponse};
-use models::claudev3::{ClaudeV3Body};
 use models::llama2::{Llama2Body, Llama2Response};
 use models::jurrasic2::{Jurrasic2Body, Jurrasic2ResponseCompletions};
 use models::titan::{TitanTextV1Body, TitanTextV1Results};
@@ -83,9 +80,6 @@ fn bcs_to_bedrock_call(bcs: BedrockCallSum) ->  Result<BedrockCall> {
             Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
         }
         BedrockCallSum::ClaudeBCS { model_id, body } => {
-            Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
-        }
-        BedrockCallSum::Claude3BCS { model_id, body } => {
             Ok(BedrockCall::new(body.convert_to_blob()?, "application/json".to_string(), "*/*".to_string(), model_id))
         }
         BedrockCallSum::Llama2BCS { model_id, body } => {
@@ -159,18 +153,6 @@ fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCal
                 d.stop_sequences, 
             );
 	    Ok(BedrockCallSum::ClaudeBCS{model_id: String::from("anthropic.claude-v2"), body: claude_body})
-        },
-        "anthropic.claude-3-sonnet-20240229-v1:0" => {
-            let d = model_defaults.claude_v3;
-            let claudev3_body = ClaudeV3Body::new(
-                d.anthropic_version,
-                d.max_tokens,
-                d.role,
-                //NOTE: hardcoded content_type for now (until chat is implemented)
-                String::from("text"),
-                question.to_string()
-            );
-	    Ok(BedrockCallSum::Claude3BCS{model_id: String::from("anthropic.claude-3-sonnet-20240229-v1:0"), body: claudev3_body})
         },
         "anthropic.claude-v2:1" => {
             let d = model_defaults.claude_v21;
@@ -255,26 +237,6 @@ fn process_response(model_id: &str, payload_bytes: &[u8]) -> Result<String, serd
             .map(|res| res.text),
         "anthropic.claude-v2" | "anthropic.claude-v2:1" => serde_json::from_slice::<ClaudeResponse>(payload_bytes)
             .map(|res| res.completion),
-        "anthropic.claude-3-sonnet-20240229-v1:0" => {
-            // NOTE: ClaudeV3 is complicated and the streamed response is not always the same
-            // this means we need to check for specific fields in the response and then return only
-            // if we have the type of response set to "text_delta"
-            // FIX: I feel like this could be way better
-            // FIX: Make it so you check for other message types and to something about it.
-            let mut deserializer = serde_json::Deserializer::from_slice(payload_bytes);
-            let value = Value::deserialize(&mut deserializer)?;
-            if let Value::Object(obj) = value {
-                if let Some(Value::Object(delta)) = obj.get("delta") {
-                    if let Some(Value::String(delta_type)) = delta.get("type") {
-                        if delta_type == "text_delta" {
-                            let text = delta.get("text").and_then(|v|v.as_str().map(ToString::to_string)).ok_or_else(||Error::custom("text"))?;
-                            return Ok(text);
-                        }
-                    }
-                }
-            }
-            Ok(String::from(""))
-           },
         "ai21.j2-ultra-v1" => serde_json::from_slice::<Jurrasic2ResponseCompletions>(payload_bytes)
             .map(|res| res.completions[0].data.text.clone()),
         "amazon.titan-text-express-v1" => serde_json::from_slice::<TitanTextV1Results>(payload_bytes)
