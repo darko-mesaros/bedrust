@@ -56,7 +56,7 @@ cargo run -- -m <MODELNAME> # replacing the model name with one of the supported
 Usage: bedrust --model-id <MODEL_ID>
 
 Options:
-  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, claude-v21, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct, claude-v3-sonnet]
+  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, claude-v21, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct, claude-v3-sonnet, claude-v3-haiku]
   -h, --help                 Print help
   -V, --version              Print version
 ```
