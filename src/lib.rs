@@ -172,6 +172,18 @@ fn q_to_bcs_with_defaults(question: String, model_id: &str) -> Result<BedrockCal
             );
 	    Ok(BedrockCallSum::Claude3BCS{model_id: String::from("anthropic.claude-3-sonnet-20240229-v1:0"), body: claudev3_body})
         },
+        "anthropic.claude-3-haiku-20240307-v1:0" => {
+            let d = model_defaults.claude_v3;
+            let claudev3_body = ClaudeV3Body::new(
+                d.anthropic_version,
+                d.max_tokens,
+                d.role,
+                //NOTE: hardcoded content_type for now (until chat is implemented)
+                String::from("text"),
+                question.to_string()
+            );
+	    Ok(BedrockCallSum::Claude3BCS{model_id: String::from("anthropic.claude-3-haiku-20240307-v1:0"), body: claudev3_body})
+        },
         "anthropic.claude-v2:1" => {
             let d = model_defaults.claude_v21;
             let claude_body = ClaudeBody::new(

@@ -7,6 +7,7 @@ A "practical" way to invoke models on Amazon Bedrock. Written in Rust, and LIVE 
 Currently supporting the following models:
 - Claude V2
 - **Claude V3 Sonnet**
+- **Claude V3 Haiku**
 - Llama2 70B
 - Cohere Command
 - Jurrasic 2 Ultra
