@@ -33,7 +33,7 @@ impl ArgModels {
         match self {
             ArgModels::ClaudeV2 => "anthropic.claude-v2",
             ArgModels::ClaudeV21 => "anthropic.claude-v2:1",
-            ArgModels::ClaudeV3Haiku => "anthropic.claude-3-sonnet-20240229-v1:0",
+            ArgModels::ClaudeV3Haiku => "anthropic.claude-3-haiku-20240307-v1:0",
             ArgModels::ClaudeV3Sonnet => "anthropic.claude-3-sonnet-20240229-v1:0",
             ArgModels::Llama270b => "meta.llama2-70b-chat-v1",
             ArgModels::CohereCommand => "cohere.command-text-v14",
