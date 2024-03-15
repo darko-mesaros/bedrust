@@ -267,7 +267,7 @@ fn process_response(model_id: &str, payload_bytes: &[u8]) -> Result<String, serd
             .map(|res| res.text),
         "anthropic.claude-v2" | "anthropic.claude-v2:1" => serde_json::from_slice::<ClaudeResponse>(payload_bytes)
             .map(|res| res.completion),
-        "anthropic.claude-3-sonnet-20240229-v1:0" => {
+        "anthropic.claude-3-sonnet-20240229-v1:0" | "anthropic.claude-3-haiku-20240307-v1:0" => {
             // NOTE: ClaudeV3 is complicated and the streamed response is not always the same
             // this means we need to check for specific fields in the response and then return only
             // if we have the type of response set to "text_delta"
