@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
-use aws_sdk_bedrockruntime::primitives::Blob;
 use anyhow::Result;
+use aws_sdk_bedrockruntime::primitives::Blob;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Llama270bConfig {

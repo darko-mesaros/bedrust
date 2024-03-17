@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
-use aws_sdk_bedrockruntime::primitives::Blob;
 use anyhow::Result;
+use aws_sdk_bedrockruntime::primitives::Blob;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TitanTextExpressV1Config {
@@ -14,7 +14,7 @@ pub struct TitanTextExpressV1Config {
 #[serde(rename_all = "camelCase")]
 pub struct TitanTextV1Body {
     pub input_text: String,
-    pub text_generation_config: TitanTextV1textGenerationConfig
+    pub text_generation_config: TitanTextV1textGenerationConfig,
 }
 
 #[derive(serde::Serialize, Debug)]
@@ -27,16 +27,22 @@ pub struct TitanTextV1textGenerationConfig {
 }
 
 impl TitanTextV1Body {
-    pub fn new(input_text: String, temperature: f32, top_p: f32, max_token_count: i32, stop_sequences: Vec<String>) -> TitanTextV1Body {
+    pub fn new(
+        input_text: String,
+        temperature: f32,
+        top_p: f32,
+        max_token_count: i32,
+        stop_sequences: Vec<String>,
+    ) -> TitanTextV1Body {
         let text_gen_config = TitanTextV1textGenerationConfig {
             temperature,
             top_p,
             max_token_count,
-            stop_sequences
+            stop_sequences,
         };
         TitanTextV1Body {
             input_text,
-            text_generation_config: text_gen_config
+            text_generation_config: text_gen_config,
         }
     }
 
@@ -49,11 +55,11 @@ impl TitanTextV1Body {
 
 #[derive(serde::Deserialize)]
 pub struct TitanTextV1Response {
-   pub results: Vec<TitanTextV1Results>
+    pub results: Vec<TitanTextV1Results>,
 }
 
 #[derive(serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TitanTextV1Results {
-   pub output_text: String,
+    pub output_text: String,
 }

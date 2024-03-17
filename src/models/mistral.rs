@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
-use aws_sdk_bedrockruntime::primitives::Blob;
 use anyhow::Result;
+use aws_sdk_bedrockruntime::primitives::Blob;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Mixtral8x7bInstruct {
@@ -30,7 +30,14 @@ pub struct Mistral7Body {
 }
 
 impl Mistral7Body {
-    pub fn new(prompt: String, temperature: f32, top_p: f32, top_k: i32, max_tokens: i32, stop: Vec<String>) -> Mistral7Body {
+    pub fn new(
+        prompt: String,
+        temperature: f32,
+        top_p: f32,
+        top_k: i32,
+        max_tokens: i32,
+        stop: Vec<String>,
+    ) -> Mistral7Body {
         Mistral7Body {
             prompt,
             temperature,
@@ -50,10 +57,10 @@ impl Mistral7Body {
 
 #[derive(serde::Deserialize, Debug)]
 pub struct Mistral7Results {
-   pub outputs: Vec<Mistral7Outputs>
+    pub outputs: Vec<Mistral7Outputs>,
 }
 
 #[derive(serde::Deserialize, Debug)]
 pub struct Mistral7Outputs {
-   pub text: String,
+    pub text: String,
 }

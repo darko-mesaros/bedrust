@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
-use aws_sdk_bedrockruntime::primitives::Blob;
 use anyhow::Result;
+use aws_sdk_bedrockruntime::primitives::Blob;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Jurrasic2UltraConfig {
@@ -21,13 +21,19 @@ pub struct Jurrasic2Body {
 }
 
 impl Jurrasic2Body {
-    pub fn new(prompt: String, temperature: f32, top_p: f32, max_tokens: i32, stop_sequences: Vec<String>) -> Jurrasic2Body {
+    pub fn new(
+        prompt: String,
+        temperature: f32,
+        top_p: f32,
+        max_tokens: i32,
+        stop_sequences: Vec<String>,
+    ) -> Jurrasic2Body {
         Jurrasic2Body {
             prompt,
             temperature,
             top_p,
             max_tokens,
-            stop_sequences
+            stop_sequences,
         }
     }
 
@@ -40,14 +46,14 @@ impl Jurrasic2Body {
 
 #[derive(serde::Deserialize, Debug)]
 pub struct Jurrasic2ResponseCompletions {
-   pub completions: Vec<Jurrasic2ResponseData>,
+    pub completions: Vec<Jurrasic2ResponseData>,
 }
 #[derive(serde::Deserialize, Debug)]
 pub struct Jurrasic2ResponseData {
-   pub data: Jurrasic2ResponseText,
+    pub data: Jurrasic2ResponseText,
 }
 
 #[derive(serde::Deserialize, Debug)]
 pub struct Jurrasic2ResponseText {
-   pub text: String,
+    pub text: String,
 }

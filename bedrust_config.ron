@@ -1,0 +1,4 @@
+BedrustConfig(
+  supported_images: ["jpg", "jpeg", "png", "bmp",],
+  caption_prompt: "Please caption the following image. Return just the caption, and nothing else. Keep it clean, and under 100 words."
+)
