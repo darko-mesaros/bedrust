@@ -14,7 +14,7 @@ use llama2::Llama270bConfig;
 use mistral::{Mistral7bInstruct, Mixtral8x7bInstruct};
 use titan::TitanTextExpressV1Config;
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use aws_sdk_bedrock::{self, types::FoundationModelDetails};
 use serde::{Deserialize, Serialize};
 
@@ -39,11 +39,15 @@ pub fn load_config(f: String) -> Result<ModelConfigs> {
     Ok(config)
 }
 
-pub async fn check_for_streaming(m: String, c: &aws_sdk_bedrock::Client) -> Result<bool, anyhow::Error> {
+pub async fn check_for_streaming(
+    m: String,
+    c: &aws_sdk_bedrock::Client,
+) -> Result<bool, anyhow::Error> {
     let call = c.get_foundation_model().model_identifier(m);
     let res = call.send().await;
     let model_details: FoundationModelDetails = res?
-        .model_details().ok_or_else(||anyhow!("Unable to get model details"))?
+        .model_details()
+        .ok_or_else(|| anyhow!("Unable to get model details"))?
         .clone();
 
     match model_details.response_streaming_supported {
