@@ -1,16 +1,30 @@
+use std::io::Write;
 use std::{fs, path::PathBuf, io::Read};
 
 use anyhow::anyhow;
 use base64::{engine::general_purpose, Engine as _};
 
-use crate::ask_bedrock;
+use serde::Serialize;
+use quick_xml::se;
+use indicatif::{ProgressBar, ProgressStyle};
 
-#[derive(Debug)]
+use crate::ask_bedrock;
+use crate::RunType;
+
+#[derive(Debug,Serialize)]
 pub struct Image {
     pub path: PathBuf,
+    #[serde(skip_serializing)]
     pub extension: String,
+    // FIX: Think about setting the base64 as optional
+    #[serde(skip_serializing)]
     pub base64: String,
     pub caption: Option<String>,
+}
+
+pub enum OutputFormat {
+    Json,
+    Xml,
 }
 
 impl Image {
@@ -63,24 +77,55 @@ pub fn load_image(p: &PathBuf) -> Result<String, anyhow::Error> {
 }
 
 pub async fn caption_image(
-    i: Vec<crate::captioner::Image>, 
+    i: &mut Vec<crate::captioner::Image>, 
     model: &str, 
     prompt: &String, 
     runtime_client: &aws_sdk_bedrockruntime::Client, 
     bedrock_client: &aws_sdk_bedrock::Client
 ) -> Result<(), anyhow::Error>{
+
+    // progress bar shenanigans
+    let progress_bar = ProgressBar::new(i.len().try_into()?);
+    progress_bar.set_style(ProgressStyle::with_template("{spinner:.green} [{wide_bar:.cyan/blue}] {msg} ({pos}/{len})")
+        .unwrap()
+        .progress_chars("#>-"));
+    progress_bar.enable_steady_tick(std::time::Duration::from_millis(100));
+
     for image in i {
-        println!("Now passing {:#?}", &image.path);
-        ask_bedrock(
+        let message = image.path.as_path().display().to_string();
+        progress_bar.set_message(message);
+        let caption = ask_bedrock(
             prompt,
             Some(image),
             model,
+            RunType::Captioning,
             runtime_client,
             bedrock_client,
         )
         .await?;
+        progress_bar.inc(1);
+        image.caption = Some(caption);
     }
+    progress_bar.finish();
 
+    Ok(())
+}
+
+pub fn write_captions(i: Vec<crate::captioner::Image>, format: OutputFormat, filename: &str) -> Result<(), anyhow::Error> {
+    match format {
+        OutputFormat::Json => {
+            let mut json_file = std::fs::File::create(filename).expect("Failed to create file");
+            let json_serialized = serde_json::to_string_pretty(&i).expect("Failed to serialize data");
+            json_file.write_all(json_serialized.as_bytes()).expect("Failed to write to file");
+        },
+        OutputFormat::Xml => {
+            let mut xml_file = std::fs::File::create(filename).expect("Failed to create file");
+            let xmled = se::to_string_with_root("captions",&i).expect("Failed to convert to XML");
+            xml_file.write_all(xmled.as_bytes()).expect("Failed to write to file");
+
+        }
+    }
+    
     Ok(())
 }
 

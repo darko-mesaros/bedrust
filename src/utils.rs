@@ -15,6 +15,8 @@ pub struct Args {
     pub model_id: ArgModels,
     #[arg(short, long)]
     pub caption: Option<PathBuf>,
+    #[arg(short)]
+    pub xml: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

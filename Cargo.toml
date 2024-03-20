@@ -1,6 +1,6 @@
 [package]
 name = "bedrust"
-version = "0.4.2"
+version = "0.5.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -17,6 +17,8 @@ colored = "2.1.0"
 figlet-rs = "0.1.5"
 futures = "0.3.30"
 image = "0.25.0"
+indicatif = "0.17.8"
+quick-xml = { version = "0.31.0", features = ["serde", "serde-types", "serialize"] }
 rand = "0.8.5"
 ron = "0.8.1"
 serde = { version = "1.0.196", features = ["derive"] }

@@ -21,7 +21,7 @@ use models::check_for_streaming;
 use models::load_config;
 
 use models::claude::{ClaudeBody, ClaudeResponse};
-use models::claudev3::{ClaudeImageSource, ClaudeV3Body};
+use models::claudev3::{ClaudeImageSource, ClaudeV3Body, ClaudeV3Response};
 use models::cohere::{CohereBody, CohereResponseText};
 use models::jurrasic2::{Jurrasic2Body, Jurrasic2ResponseCompletions};
 use models::llama2::{Llama2Body, Llama2Response};
@@ -45,6 +45,11 @@ pub async fn configure_aws(s: String) -> aws_config::SdkConfig {
         .await
 }
 //======================================== END AWS
+
+pub enum RunType {
+    Standard,
+    Captioning,
+}
 
 #[derive(Debug)]
 struct BedrockCall {
@@ -155,7 +160,7 @@ fn bcs_to_bedrock_call(bcs: BedrockCallSum) -> Result<BedrockCall> {
 fn q_to_bcs_with_defaults(
     question: Option<String>,
     model_id: &str,
-    image: Option<Image>,
+    image: Option<&Image>,
 ) -> Result<BedrockCallSum, anyhow::Error> {
     // call the function to load model settings:
     // TODO: do not hardcode the name and path of the config file
@@ -345,7 +350,7 @@ fn q_to_bcs_with_defaults(
 
 // Given a question and model_id, create a BedrockCall to this model.
 // This will fail if model_id is not known to q_to_bcs_with_defaults.
-fn mk_bedrock_call(question: &String, image: Option<Image>, model_id: &str) -> Result<BedrockCall> {
+fn mk_bedrock_call(question: &String, image: Option<&Image>, model_id: &str) -> Result<BedrockCall> {
     // FIX: This None is just harcoded for now - but need to find a way to parse it.
     let bcs = q_to_bcs_with_defaults(Some(question.to_string()), model_id, image)?;
     bcs_to_bedrock_call(bcs)
@@ -355,91 +360,107 @@ fn mk_bedrock_call(question: &String, image: Option<Image>, model_id: &str) -> R
 // This will fail if model_id is not known to q_to_bcs_with_defaults
 pub async fn ask_bedrock(
     question: &String,
-    image: Option<Image>,
+    image: Option<&Image>,
     model_id: &str,
+    run_type: RunType,
     client: &aws_sdk_bedrockruntime::Client,
     bedrock_client: &aws_sdk_bedrock::Client,
-) -> Result<()> {
-    if image.is_some() {
-        // TODO: Programmaticall check for multimodality of FMs
-        if model_id != "anthropic.claude-3-sonnet-20240229-v1:0" && model_id != "anthropic.claude-3-haiku-20240307-v1:0" {
-            eprintln!("🛑SORRY! The model you selected is not able to caption images. Please select one that is.");
-            std::process::exit(1);
-        } else {
+) -> Result<String, anyhow::Error> {
+    match run_type {
+        RunType::Standard => {
             let bcall = mk_bedrock_call(question, image, model_id)?;
             // check if model supports streaming:
             if check_for_streaming(model_id.to_string(), bedrock_client).await? {
-                call_bedrock_stream(client, bcall).await?;
+               call_bedrock_stream(client, bcall).await?;
+               Ok("Nothing".to_string())
             } else {
-                // if it does not just call it
-                call_bedrock(client, bcall).await?;
+               // if it does not just call it
+               call_bedrock(client, bcall, run_type) .await?;
+               Ok("Nothing".to_string())
             }
-        }
-    } else {
-        let bcall = mk_bedrock_call(question, None, model_id)?;
-        // check if model supports streaming:
-        if check_for_streaming(model_id.to_string(), bedrock_client).await? {
-            call_bedrock_stream(client, bcall).await?;
-        } else {
-            // if it does not just call it
-            call_bedrock(client, bcall).await?;
-        }
+        },
+        RunType::Captioning => {
+            if image.is_some() {
+                // TODO: Programmaticall check for multimodality of FMs
+                if model_id != "anthropic.claude-3-sonnet-20240229-v1:0" && model_id != "anthropic.claude-3-haiku-20240307-v1:0" {
+                    eprintln!("🛑SORRY! The model you selected is not able to caption images. Please select one that is.");
+                    std::process::exit(1);
+                }
+                let bcall = mk_bedrock_call(question, image, model_id)?;
+                // because this is captioniong, we dont need streaming
+                let caption = call_bedrock(client, bcall, run_type).await?;
+                Ok(caption)
+            } else {
+                // FIX: Make this error nicer
+                Err(anyhow!("There is not image provided. So we cannot do any captioning"))
+            }
+        },
     }
-    Ok(())
+    //Ok(())
 }
 
 //========================================
 
-fn process_response(model_id: &str, payload_bytes: &[u8]) -> Result<String, serde_json::Error> {
-    match model_id {
-        "meta.llama2-70b-chat-v1" => {
-            serde_json::from_slice::<Llama2Response>(payload_bytes).map(|res| res.generation)
+fn process_response(model_id: &str, payload_bytes: &[u8], streaming: bool) -> Result<String, serde_json::Error> {
+    // FIX: Flip this to not being !=true
+    if streaming != true  {
+        match model_id {
+            "anthropic.claude-3-sonnet-20240229-v1:0" | "anthropic.claude-3-haiku-20240307-v1:0" => {
+                serde_json::from_slice::<ClaudeV3Response>(payload_bytes).map(|res| res.content[0].text.clone())
+            },
+            &_ => Err(serde_json::Error::custom("Unknown model ID")),
         }
-        "cohere.command-text-v14" => {
-            serde_json::from_slice::<CohereResponseText>(payload_bytes).map(|res| res.text)
-        }
-        "anthropic.claude-v2" | "anthropic.claude-v2:1" => {
-            serde_json::from_slice::<ClaudeResponse>(payload_bytes).map(|res| res.completion)
-        }
-        "anthropic.claude-3-sonnet-20240229-v1:0" | "anthropic.claude-3-haiku-20240307-v1:0" => {
-            // NOTE: ClaudeV3 is complicated and the streamed response is not always the same
-            // this means we need to check for specific fields in the response and then return only
-            // if we have the type of response set to "text_delta"
-            // FIX: I feel like this could be way better
-            // FIX: Make it so you check for other message types and to something about it.
-            let mut deserializer = serde_json::Deserializer::from_slice(payload_bytes);
-            let value = Value::deserialize(&mut deserializer)?;
-            if let Value::Object(obj) = value {
-                if let Some(Value::Object(delta)) = obj.get("delta") {
-                    if let Some(Value::String(delta_type)) = delta.get("type") {
-                        if delta_type == "text_delta" {
-                            let text = delta
-                                .get("text")
-                                .and_then(|v| v.as_str().map(ToString::to_string))
-                                .ok_or_else(|| Error::custom("text"))?;
-                            return Ok(text);
+    } else {
+        match model_id {
+            "meta.llama2-70b-chat-v1" => {
+                serde_json::from_slice::<Llama2Response>(payload_bytes).map(|res| res.generation)
+            }
+            "cohere.command-text-v14" => {
+                serde_json::from_slice::<CohereResponseText>(payload_bytes).map(|res| res.text)
+            }
+            "anthropic.claude-v2" | "anthropic.claude-v2:1" => {
+                serde_json::from_slice::<ClaudeResponse>(payload_bytes).map(|res| res.completion)
+            }
+            "anthropic.claude-3-sonnet-20240229-v1:0" | "anthropic.claude-3-haiku-20240307-v1:0" => {
+                // NOTE: ClaudeV3 is complicated and the streamed response is not always the same
+                // this means we need to check for specific fields in the response and then return only
+                // if we have the type of response set to "text_delta"
+                // FIX: I feel like this could be way better
+                // FIX: Make it so you check for other message types and to something about it.
+                let mut deserializer = serde_json::Deserializer::from_slice(payload_bytes);
+                let value = Value::deserialize(&mut deserializer)?;
+                if let Value::Object(obj) = value {
+                    if let Some(Value::Object(delta)) = obj.get("delta") {
+                        if let Some(Value::String(delta_type)) = delta.get("type") {
+                            if delta_type == "text_delta" {
+                                let text = delta
+                                    .get("text")
+                                    .and_then(|v| v.as_str().map(ToString::to_string))
+                                    .ok_or_else(|| Error::custom("text"))?;
+                                return Ok(text);
+                            }
                         }
                     }
                 }
+                Ok(String::from(""))
             }
-            Ok(String::from(""))
+            "ai21.j2-ultra-v1" => serde_json::from_slice::<Jurrasic2ResponseCompletions>(payload_bytes)
+                .map(|res| res.completions[0].data.text.clone()),
+            "amazon.titan-text-express-v1" => {
+                serde_json::from_slice::<TitanTextV1Results>(payload_bytes).map(|res| res.output_text)
+            }
+            "mistral.mixtral-8x7b-instruct-v0:1" | "mistral.mistral-7b-instruct-v0:2" => {
+                serde_json::from_slice::<Mistral7Results>(payload_bytes)
+                    .map(|res| res.outputs[0].text.clone())
+            }
+            &_ => Err(serde_json::Error::custom("Unknown model ID")),
         }
-        "ai21.j2-ultra-v1" => serde_json::from_slice::<Jurrasic2ResponseCompletions>(payload_bytes)
-            .map(|res| res.completions[0].data.text.clone()),
-        "amazon.titan-text-express-v1" => {
-            serde_json::from_slice::<TitanTextV1Results>(payload_bytes).map(|res| res.output_text)
-        }
-        "mistral.mixtral-8x7b-instruct-v0:1" | "mistral.mistral-7b-instruct-v0:2" => {
-            serde_json::from_slice::<Mistral7Results>(payload_bytes)
-                .map(|res| res.outputs[0].text.clone())
-        }
-        &_ => Err(serde_json::Error::custom("Unknown model ID")),
     }
 }
 
 // this function is only called if we do not want the streaming result back.
 // so far this is here only for models that do not support streaming (ie Jurrasic2Ultra)
-async fn call_bedrock(bc: &aws_sdk_bedrockruntime::Client, c: BedrockCall) -> Result<()> {
+async fn call_bedrock(bc: &aws_sdk_bedrockruntime::Client, c: BedrockCall, run_type: RunType) -> Result<String, anyhow::Error> {
     let response = bc
         .invoke_model()
         .body(c.body)
@@ -449,16 +470,21 @@ async fn call_bedrock(bc: &aws_sdk_bedrockruntime::Client, c: BedrockCall) -> Re
         .send()
         .await?;
 
-    let response_text = process_response(c.model_id.as_str(), response.body.as_ref());
+    let response_text = process_response(c.model_id.as_str(), response.body.as_ref(), false);
     match response_text {
         Ok(text) => {
-            print!("{}", text);
-            io::stdout().flush().unwrap();
+            match run_type {
+                RunType::Captioning => {
+                    return Ok(text);
+                },
+                RunType::Standard => {
+                    println!("{}", text);
+                    return Ok(text);
+                }
+            }
         }
-        Err(e) => eprintln!("Error processing response: {}", e),
+        Err(e) => Err(anyhow!("Error processing response: {}", e)),
     }
-
-    Ok(())
 }
 
 async fn call_bedrock_stream(bc: &aws_sdk_bedrockruntime::Client, c: BedrockCall) -> Result<()> {
@@ -478,7 +504,7 @@ async fn call_bedrock_stream(bc: &aws_sdk_bedrockruntime::Client, c: BedrockCall
             ResponseStream::Chunk(payload_part) => {
                 if let Some(payload_bytes) = payload_part.bytes {
                     let response_text =
-                        process_response(c.model_id.as_str(), payload_bytes.as_ref());
+                        process_response(c.model_id.as_str(), payload_bytes.as_ref(), true);
                     match response_text {
                         Ok(text) => {
                             print!("{}", text);

@@ -142,7 +142,7 @@ impl ClaudeV3Body {
 // the response coming from Claude V3
 #[derive(serde::Deserialize, Debug)]
 pub struct ClaudeV3Response {
-    pub delta: ClaudeV3ResponseContent,
+    pub content: Vec<ClaudeV3ResponseContent>,
 }
 
 #[derive(serde::Deserialize, Debug)]
