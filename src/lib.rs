@@ -1,6 +1,6 @@
+pub mod captioner;
 pub mod models;
 pub mod utils;
-pub mod captioner;
 
 use anyhow::anyhow;
 use aws_config::meta::region::RegionProviderChain;
@@ -237,7 +237,7 @@ fn q_to_bcs_with_defaults(
                 Some(ClaudeImageSource {
                     image_type: "base64".to_string(),
                     data: image.as_ref().unwrap().base64.clone(),
-                    media_type: format!("image/{}", image.as_ref().unwrap().extension)
+                    media_type: format!("image/{}", image.as_ref().unwrap().extension),
                 })
             } else {
                 None
@@ -261,7 +261,7 @@ fn q_to_bcs_with_defaults(
                 Some(ClaudeImageSource {
                     image_type: "base64".to_string(),
                     data: image.as_ref().unwrap().base64.clone(),
-                    media_type: format!("image/{}", image.as_ref().unwrap().extension)
+                    media_type: format!("image/{}", image.as_ref().unwrap().extension),
                 })
             } else {
                 None
@@ -350,8 +350,11 @@ fn q_to_bcs_with_defaults(
 
 // Given a question and model_id, create a BedrockCall to this model.
 // This will fail if model_id is not known to q_to_bcs_with_defaults.
-fn mk_bedrock_call(question: &String, image: Option<&Image>, model_id: &str) -> Result<BedrockCall> {
-    // FIX: This None is just harcoded for now - but need to find a way to parse it.
+fn mk_bedrock_call(
+    question: &String,
+    image: Option<&Image>,
+    model_id: &str,
+) -> Result<BedrockCall> {
     let bcs = q_to_bcs_with_defaults(Some(question.to_string()), model_id, image)?;
     bcs_to_bedrock_call(bcs)
 }
@@ -371,19 +374,21 @@ pub async fn ask_bedrock(
             let bcall = mk_bedrock_call(question, image, model_id)?;
             // check if model supports streaming:
             if check_for_streaming(model_id.to_string(), bedrock_client).await? {
-               call_bedrock_stream(client, bcall).await?;
-               Ok("Nothing".to_string())
+                call_bedrock_stream(client, bcall).await?;
+                Ok("Nothing".to_string())
             } else {
-               // if it does not just call it
-               call_bedrock(client, bcall, run_type) .await?;
-               Ok("Nothing".to_string())
+                // if it does not just call it
+                call_bedrock(client, bcall, run_type).await?;
+                Ok("Nothing".to_string())
             }
-        },
+        }
         RunType::Captioning => {
             if image.is_some() {
                 // TODO: Programmaticall check for multimodality of FMs
-                if model_id != "anthropic.claude-3-sonnet-20240229-v1:0" && model_id != "anthropic.claude-3-haiku-20240307-v1:0" {
-                    eprintln!("🛑SORRY! The model you selected is not able to caption images. Please select one that is.");
+                if model_id != "anthropic.claude-3-sonnet-20240229-v1:0"
+                    && model_id != "anthropic.claude-3-haiku-20240307-v1:0"
+                {
+                    eprintln!("🛑SORRY! The model you selected is not able to caption images. Please select either `claude-v3-sonnet` or `claude-v3-haiku`.");
                     std::process::exit(1);
                 }
                 let bcall = mk_bedrock_call(question, image, model_id)?;
@@ -391,23 +396,29 @@ pub async fn ask_bedrock(
                 let caption = call_bedrock(client, bcall, run_type).await?;
                 Ok(caption)
             } else {
-                // FIX: Make this error nicer
-                Err(anyhow!("There is not image provided. So we cannot do any captioning"))
+                Err(anyhow!(
+                    "No images provided. Captioning aborted."
+                ))
             }
-        },
+        }
     }
     //Ok(())
 }
 
 //========================================
 
-fn process_response(model_id: &str, payload_bytes: &[u8], streaming: bool) -> Result<String, serde_json::Error> {
-    // FIX: Flip this to not being !=true
-    if streaming != true  {
+fn process_response(
+    model_id: &str,
+    payload_bytes: &[u8],
+    streaming: bool,
+) -> Result<String, serde_json::Error> {
+    if !streaming {
         match model_id {
-            "anthropic.claude-3-sonnet-20240229-v1:0" | "anthropic.claude-3-haiku-20240307-v1:0" => {
-                serde_json::from_slice::<ClaudeV3Response>(payload_bytes).map(|res| res.content[0].text.clone())
-            },
+            "anthropic.claude-3-sonnet-20240229-v1:0"
+            | "anthropic.claude-3-haiku-20240307-v1:0" => {
+                serde_json::from_slice::<ClaudeV3Response>(payload_bytes)
+                    .map(|res| res.content[0].text.clone())
+            }
             &_ => Err(serde_json::Error::custom("Unknown model ID")),
         }
     } else {
@@ -421,7 +432,8 @@ fn process_response(model_id: &str, payload_bytes: &[u8], streaming: bool) -> Re
             "anthropic.claude-v2" | "anthropic.claude-v2:1" => {
                 serde_json::from_slice::<ClaudeResponse>(payload_bytes).map(|res| res.completion)
             }
-            "anthropic.claude-3-sonnet-20240229-v1:0" | "anthropic.claude-3-haiku-20240307-v1:0" => {
+            "anthropic.claude-3-sonnet-20240229-v1:0"
+            | "anthropic.claude-3-haiku-20240307-v1:0" => {
                 // NOTE: ClaudeV3 is complicated and the streamed response is not always the same
                 // this means we need to check for specific fields in the response and then return only
                 // if we have the type of response set to "text_delta"
@@ -444,10 +456,13 @@ fn process_response(model_id: &str, payload_bytes: &[u8], streaming: bool) -> Re
                 }
                 Ok(String::from(""))
             }
-            "ai21.j2-ultra-v1" => serde_json::from_slice::<Jurrasic2ResponseCompletions>(payload_bytes)
-                .map(|res| res.completions[0].data.text.clone()),
+            "ai21.j2-ultra-v1" => {
+                serde_json::from_slice::<Jurrasic2ResponseCompletions>(payload_bytes)
+                    .map(|res| res.completions[0].data.text.clone())
+            }
             "amazon.titan-text-express-v1" => {
-                serde_json::from_slice::<TitanTextV1Results>(payload_bytes).map(|res| res.output_text)
+                serde_json::from_slice::<TitanTextV1Results>(payload_bytes)
+                    .map(|res| res.output_text)
             }
             "mistral.mixtral-8x7b-instruct-v0:1" | "mistral.mistral-7b-instruct-v0:2" => {
                 serde_json::from_slice::<Mistral7Results>(payload_bytes)
@@ -460,7 +475,11 @@ fn process_response(model_id: &str, payload_bytes: &[u8], streaming: bool) -> Re
 
 // this function is only called if we do not want the streaming result back.
 // so far this is here only for models that do not support streaming (ie Jurrasic2Ultra)
-async fn call_bedrock(bc: &aws_sdk_bedrockruntime::Client, c: BedrockCall, run_type: RunType) -> Result<String, anyhow::Error> {
+async fn call_bedrock(
+    bc: &aws_sdk_bedrockruntime::Client,
+    c: BedrockCall,
+    run_type: RunType,
+) -> Result<String, anyhow::Error> {
     let response = bc
         .invoke_model()
         .body(c.body)
@@ -472,17 +491,13 @@ async fn call_bedrock(bc: &aws_sdk_bedrockruntime::Client, c: BedrockCall, run_t
 
     let response_text = process_response(c.model_id.as_str(), response.body.as_ref(), false);
     match response_text {
-        Ok(text) => {
-            match run_type {
-                RunType::Captioning => {
-                    return Ok(text);
-                },
-                RunType::Standard => {
-                    println!("{}", text);
-                    return Ok(text);
-                }
+        Ok(text) => match run_type {
+            RunType::Captioning => Ok(text),
+            RunType::Standard => {
+                println!("{}", text);
+                Ok(text)
             }
-        }
+        },
         Err(e) => Err(anyhow!("Error processing response: {}", e)),
     }
 }
@@ -518,8 +533,5 @@ async fn call_bedrock_stream(bc: &aws_sdk_bedrockruntime::Client, c: BedrockCall
             otherwise => panic!("received unexpected event type: {:?}", otherwise),
         }
     }
-    // FIX: This is just for captioning clean output
-    println!("");
-    println!("---");
-   Ok(())
+    Ok(())
 }

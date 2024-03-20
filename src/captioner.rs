@@ -1,17 +1,17 @@
 use std::io::Write;
-use std::{fs, path::PathBuf, io::Read};
+use std::{fs, io::Read, path::PathBuf};
 
 use anyhow::anyhow;
 use base64::{engine::general_purpose, Engine as _};
 
-use serde::Serialize;
-use quick_xml::se;
 use indicatif::{ProgressBar, ProgressStyle};
+use quick_xml::se;
+use serde::Serialize;
 
 use crate::ask_bedrock;
 use crate::RunType;
 
-#[derive(Debug,Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Image {
     pub path: PathBuf,
     #[serde(skip_serializing)]
@@ -43,7 +43,6 @@ impl Image {
             caption: None,
         };
         Ok(image)
-
     }
 }
 
@@ -77,18 +76,21 @@ pub fn load_image(p: &PathBuf) -> Result<String, anyhow::Error> {
 }
 
 pub async fn caption_image(
-    i: &mut Vec<crate::captioner::Image>, 
-    model: &str, 
-    prompt: &String, 
-    runtime_client: &aws_sdk_bedrockruntime::Client, 
-    bedrock_client: &aws_sdk_bedrock::Client
-) -> Result<(), anyhow::Error>{
-
+    i: &mut Vec<crate::captioner::Image>,
+    model: &str,
+    prompt: &String,
+    runtime_client: &aws_sdk_bedrockruntime::Client,
+    bedrock_client: &aws_sdk_bedrock::Client,
+) -> Result<(), anyhow::Error> {
     // progress bar shenanigans
     let progress_bar = ProgressBar::new(i.len().try_into()?);
-    progress_bar.set_style(ProgressStyle::with_template("{spinner:.green} [{wide_bar:.cyan/blue}] {msg} ({pos}/{len})")
+    progress_bar.set_style(
+        ProgressStyle::with_template(
+            "{spinner:.green} [{wide_bar:.cyan/blue}] {msg} ({pos}/{len})",
+        )
         .unwrap()
-        .progress_chars("#>-"));
+        .progress_chars("#>-"),
+    );
     progress_bar.enable_steady_tick(std::time::Duration::from_millis(100));
 
     for image in i {
@@ -111,30 +113,38 @@ pub async fn caption_image(
     Ok(())
 }
 
-pub fn write_captions(i: Vec<crate::captioner::Image>, format: OutputFormat, filename: &str) -> Result<(), anyhow::Error> {
+pub fn write_captions(
+    i: Vec<crate::captioner::Image>,
+    format: OutputFormat,
+    filename: &str,
+) -> Result<(), anyhow::Error> {
     match format {
         OutputFormat::Json => {
             let mut json_file = std::fs::File::create(filename).expect("Failed to create file");
-            let json_serialized = serde_json::to_string_pretty(&i).expect("Failed to serialize data");
-            json_file.write_all(json_serialized.as_bytes()).expect("Failed to write to file");
-        },
+            let json_serialized =
+                serde_json::to_string_pretty(&i).expect("Failed to serialize data");
+            json_file
+                .write_all(json_serialized.as_bytes())
+                .expect("Failed to write to file");
+        }
         OutputFormat::Xml => {
             let mut xml_file = std::fs::File::create(filename).expect("Failed to create file");
-            let xmled = se::to_string_with_root("captions",&i).expect("Failed to convert to XML");
-            xml_file.write_all(xmled.as_bytes()).expect("Failed to write to file");
-
+            let xmled = se::to_string_with_root("captions", &i).expect("Failed to convert to XML");
+            xml_file
+                .write_all(xmled.as_bytes())
+                .expect("Failed to write to file");
         }
     }
-    
+
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::load_bedrust_config;
     use image::{Rgb, RgbImage};
     use rand::distributions::{Alphanumeric, DistString};
-    use crate::utils::load_bedrust_config;
 
     // list all files in the directory
     #[test]
@@ -162,7 +172,8 @@ mod tests {
         // load supported file extensions
         let config = load_bedrust_config(String::from("bedrust_config.ron")).unwrap();
 
-        let list = list_files_in_path_by_extension(PathBuf::from(dir_path), config.supported_images);
+        let list =
+            list_files_in_path_by_extension(PathBuf::from(dir_path), config.supported_images);
         let expected_vec = vec![
             PathBuf::from(&file1_path),
             PathBuf::from(&file3_path),

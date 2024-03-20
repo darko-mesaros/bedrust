@@ -1,6 +1,6 @@
 use anyhow::Result;
 use aws_sdk_bedrockruntime::primitives::Blob;
-use serde::{Deserialize, Serialize, ser::SerializeStruct};
+use serde::{ser::SerializeStruct, Deserialize, Serialize};
 
 #[derive(Debug)]
 pub enum ClaudeV3ContentEnum {
@@ -9,15 +9,15 @@ pub enum ClaudeV3ContentEnum {
 }
 
 // NOTE: This had to be implemented separately due to the way the message for ClaudeV3
-// need to be made. The issue was that both the TextContent and ImageContent are different 
+// need to be made. The issue was that both the TextContent and ImageContent are different
 // structs, but need to sit under the content json array, without its struct names.
 // BEFORE: content: [ text_content: { // ... }, image_content: { // ...}]
 // AFTER: content: [ { // ... }, { // ...}]
 impl Serialize for ClaudeV3ContentEnum {
     fn serialize<S>(&self, serializer: S) -> std::prelude::v1::Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer {
-
+    where
+        S: serde::Serializer,
+    {
         match *self {
             ClaudeV3ContentEnum::TextContent(ref tc) => {
                 let mut state = serializer.serialize_struct("Content", 2)?;
@@ -26,7 +26,7 @@ impl Serialize for ClaudeV3ContentEnum {
                     state.serialize_field("text", text)?;
                 }
                 state.end()
-            },
+            }
             ClaudeV3ContentEnum::ImageContent(ref ic) => {
                 let mut state = serializer.serialize_struct("Content", 2)?;
                 state.serialize_field("type", &ic.content_type)?;
@@ -34,9 +34,8 @@ impl Serialize for ClaudeV3ContentEnum {
                     state.serialize_field("source", source)?;
                 }
                 state.end()
-            },
+            }
         }
-        
     }
 }
 
@@ -101,19 +100,19 @@ impl ClaudeV3Body {
         anthropic_version: String,
         max_tokens: i32,
         role: String,
-        content_type: String,
+        _content_type: String,
         text: Option<String>,
         image_source: Option<ClaudeImageSource>,
     ) -> ClaudeV3Body {
         let mut content = Vec::new();
-        let text_content = text.map(|t| ClaudeV3TextContent { 
+        let text_content = text.map(|t| ClaudeV3TextContent {
             content_type: "text".to_string(),
             text: Some(t),
         });
         content.push(ClaudeV3ContentEnum::TextContent(text_content.unwrap()));
 
         if image_source.is_some() {
-            let image_content = image_source.map(|source| ClaudeV3ImageContent { 
+            let image_content = image_source.map(|source| ClaudeV3ImageContent {
                 content_type: "image".to_string(),
                 source: Some(source),
             });
