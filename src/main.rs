@@ -1,6 +1,3 @@
-// TODO:
-// CAPTIONER: Impelement some nice printouts while the caption is
-// happening.
 mod utils;
 use std::io;
 use std::io::Write;
