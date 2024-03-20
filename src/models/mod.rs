@@ -1,24 +1,22 @@
-pub mod llama2;
-pub mod cohere;
 pub mod claude;
 pub mod claudev3;
+pub mod cohere;
 pub mod jurrasic2;
-pub mod titan;
+pub mod llama2;
 pub mod mistral;
+pub mod titan;
 
-use llama2::Llama270bConfig;
-use cohere::CohereCommandConfig;
-use claude::{ClaudeV2Config, ClaudeV21Config};
+use claude::{ClaudeV21Config, ClaudeV2Config};
 use claudev3::ClaudeV3Config;
+use cohere::CohereCommandConfig;
 use jurrasic2::Jurrasic2UltraConfig;
-use titan::TitanTextExpressV1Config;
+use llama2::Llama270bConfig;
 use mistral::{Mistral7bInstruct, Mixtral8x7bInstruct};
+use titan::TitanTextExpressV1Config;
 
-use serde::{Serialize, Deserialize};
-use aws_sdk_bedrock::{self,
-types::FoundationModelDetails,
-};
-use anyhow::Result;
+use anyhow::{Result, anyhow};
+use aws_sdk_bedrock::{self, types::FoundationModelDetails};
+use serde::{Deserialize, Serialize};
 
 use std::fs;
 
@@ -41,11 +39,12 @@ pub fn load_config(f: String) -> Result<ModelConfigs> {
     Ok(config)
 }
 
-pub async fn check_for_streaming(m: String, c: aws_sdk_bedrock::Client) -> Result<bool> {
-    let call = c.get_foundation_model()
-                    .model_identifier(m);
+pub async fn check_for_streaming(m: String, c: &aws_sdk_bedrock::Client) -> Result<bool, anyhow::Error> {
+    let call = c.get_foundation_model().model_identifier(m);
     let res = call.send().await;
-    let model_details: FoundationModelDetails = res.unwrap().model_details().unwrap().clone();
+    let model_details: FoundationModelDetails = res?
+        .model_details().ok_or_else(||anyhow!("Unable to get model details"))?
+        .clone();
 
     match model_details.response_streaming_supported {
         Some(o) => Ok(o),

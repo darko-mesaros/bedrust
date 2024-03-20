@@ -53,21 +53,58 @@ cargo run -- -m <MODELNAME> # replacing the model name with one of the supported
 
 ## Usage
 ```bash
-Usage: bedrust --model-id <MODEL_ID>
+Usage: bedrust [OPTIONS] --model-id <MODEL_ID>
 
 Options:
-  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, claude-v21, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct, claude-v3-sonnet, claude-v3-haiku]
+  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, claude-v21, claude-v3-sonnet, claude-v3-haiku, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct]
+  -c, --caption <CAPTION>
+  -x
   -h, --help                 Print help
   -V, --version              Print version
 ```
 Once, prompted enter your question, and hit `ENTER`. 🚀
+
+## Captioning images
+
+![screenshot of bedrust running the captioner](/img/captioner.png)
+
+🚀 **NEW feature:** Thanks to the multimodality of Claude V3, you can now pass images to this Large Language Model. This means we can do some fun things like caption images for the sake of accessibility. This feature is available in Bedrust from version `0.5.0`.
+
+> ⚠️ Currently the only two models that support this are: Claude V3 Sonnet, and Claude V3 Haiku
+
+To use captioning you just need to pass it the `-c` parameter, along with the directory where you have your images:
+
+```bash
+cargo run -- -m claude-v3-sonnet -c /tmp/test-images/
+```
+This will retrieve the supported images, and produce captions for them. Ultimately producing a `captions.json` file in the current working directory with the captions connected to image paths.
+
+Here is an example of the output:
+```json
+[
+  {
+    "path": "/tmp/test-images/4slika.jpeg",
+    "caption": "A computer CPU fan cooling a circuit board with Ethernet and other ports."
+  },
+  {
+    "path": "/tmp/test-images/kompjuter.jpeg",
+    "caption": "An open circuit board with various electronic components and wires, placed in an office or workshop setting with shelves and equipment visible in the background."
+  },
+  {
+    "path": "/tmp/test-images/c64.jpeg",
+    "caption": "Vintage Commodore computer monitor displaying the Twitch logo on the screen."
+  }
+]
+```
+
+Additionally you can customize captioning *prompt* and *supported image file formats* by editing the `bedrust_config.ron` file in the root of this project.
 
 ## TODO
 - [x] Ability to get user input
 - [x] Being able to select a model
 - [ ] Have a conversation with the model
 - [x] Stream the responses back word by word
-- [ ] Better error handling
+- [x] Better error handling
 - [ ] Code Testing
 - [ ] Ability to generate images
 - [x] Make it prettier

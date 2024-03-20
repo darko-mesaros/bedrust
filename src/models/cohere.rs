@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
-use aws_sdk_bedrockruntime::primitives::Blob;
 use anyhow::Result;
+use aws_sdk_bedrockruntime::primitives::Blob;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CohereCommandConfig {
@@ -24,7 +24,15 @@ pub struct CohereBody {
 }
 
 impl CohereBody {
-    pub fn new(prompt: String, max_tokens: i32, temperature: f32, p: f32, k: i32, stop_sequences: Vec<String>, stream: bool) -> CohereBody {
+    pub fn new(
+        prompt: String,
+        max_tokens: i32,
+        temperature: f32,
+        p: f32,
+        k: i32,
+        stop_sequences: Vec<String>,
+        stream: bool,
+    ) -> CohereBody {
         CohereBody {
             prompt,
             max_tokens,

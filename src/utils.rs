@@ -1,17 +1,28 @@
-use figlet_rs::FIGfont;
 use clap::Parser;
+use figlet_rs::FIGfont;
 
-use std::io;
+use std::{fs, io, path::PathBuf};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
+use serde::{Deserialize, Serialize};
 
 // ######################################## ARGUMENT PARSING
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 pub struct Args {
     #[clap(value_enum)]
-    #[arg(short,long)]
+    #[arg(short, long)]
     pub model_id: ArgModels,
+    #[arg(short, long)]
+    pub caption: Option<PathBuf>,
+    #[arg(short)]
+    pub xml: bool,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct BedrustConfig {
+    pub supported_images: Vec<String>,
+    pub caption_prompt: String,
 }
 
 #[derive(clap::ValueEnum, Clone)]
@@ -47,15 +58,19 @@ impl ArgModels {
 // ######################################## END ARGUMENT PARSING
 
 pub fn hello_header(s: &str) -> io::Result<()> {
-
     let ansi_font = FIGfont::from_file("resources/ansishadow.flf").unwrap();
     let hello = ansi_font.convert(s);
 
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
-    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(255,153,0))))?;
+    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(255, 153, 0))))?;
     println!("{}", hello.unwrap());
     stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
 
     Ok(())
+}
 
+pub fn load_bedrust_config(f: String) -> Result<BedrustConfig, anyhow::Error> {
+    let file = fs::File::open(f)?;
+    let config: BedrustConfig = ron::de::from_reader(file)?;
+    Ok(config)
 }

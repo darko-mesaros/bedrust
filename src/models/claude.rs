@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
-use aws_sdk_bedrockruntime::primitives::Blob;
 use anyhow::Result;
+use aws_sdk_bedrockruntime::primitives::Blob;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaudeV2Config {
@@ -31,7 +31,14 @@ pub struct ClaudeBody {
 }
 
 impl ClaudeBody {
-    pub fn new(prompt: String, temperature: f32, top_p: f32, top_k: i32, max_tokens_to_sample: i32, stop_sequences: Vec<String>) -> ClaudeBody {
+    pub fn new(
+        prompt: String,
+        temperature: f32,
+        top_p: f32,
+        top_k: i32,
+        max_tokens_to_sample: i32,
+        stop_sequences: Vec<String>,
+    ) -> ClaudeBody {
         ClaudeBody {
             prompt,
             temperature,
@@ -44,7 +51,7 @@ impl ClaudeBody {
 
     pub fn convert_to_blob(&self) -> Result<Blob> {
         let blob_string = serde_json::to_vec(&self)?;
-        let body: Blob = Blob::new(blob_string);
+        let body: Blob = Blob::new(blob_string.clone());
         Ok(body)
     }
 }
