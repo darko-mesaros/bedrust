@@ -6,6 +6,8 @@ use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 use serde::{Deserialize, Serialize};
 
+use colored::*;
+
 // ######################################## ARGUMENT PARSING
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -65,6 +67,11 @@ pub fn hello_header(s: &str) -> io::Result<()> {
     stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(255, 153, 0))))?;
     println!("{}", hello.unwrap());
     stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
+    println!("{}", "----------------------------------------".cyan());
+    println!("{}", "Currently supported chat commands: ".truecolor(83,82,82));
+    println!("{}", "/q\t \t - Quit".truecolor(255, 229, 153));
+    println!("{}", "----------------------------------------".cyan());
+    println!("{}{}{} 💬", "Now with ".italic(), "CHAT".red().on_yellow().blink(), " enabled!".italic());
 
     Ok(())
 }
@@ -73,4 +80,8 @@ pub fn load_bedrust_config(f: String) -> Result<BedrustConfig, anyhow::Error> {
     let file = fs::File::open(f)?;
     let config: BedrustConfig = ron::de::from_reader(file)?;
     Ok(config)
+}
+
+pub fn print_warning(s: &str) {
+    println!("{}", s.yellow());
 }

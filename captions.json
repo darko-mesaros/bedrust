@@ -1,0 +1,26 @@
+[
+  {
+    "path": "/tmp/test-images/4slika.jpeg",
+    "caption": "Close-up image of a computer fan and circuit board."
+  },
+  {
+    "path": "/tmp/test-images/kompjuter.jpeg",
+    "caption": "Circuit board in a computer repair shop."
+  },
+  {
+    "path": "/tmp/test-images/c64.jpeg",
+    "caption": "An old Commodore video monitor displaying the Twitch logo, surrounded by various computer books and equipment."
+  },
+  {
+    "path": "/tmp/test-images/imag1.jpeg",
+    "caption": "A grayscale image of an abstract design on the screen of a laptop computer, placed on a granite countertop."
+  },
+  {
+    "path": "/tmp/test-images/image 3.jpeg",
+    "caption": "A collection of green glass Cantillon beer bottles displayed on a wooden surface."
+  },
+  {
+    "path": "/tmp/test-images/image2.png",
+    "caption": "A rally car races through a forested area, kicking up dirt and debris as it navigates the winding dirt road."
+  }
+]
