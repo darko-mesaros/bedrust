@@ -1,8 +1,10 @@
-# Bedrust
+# Bedrust 🦀🧠⛅🪨
 
 ![screenshot of bedrust](/img/bedrust.png)
 
-A "practical" way to invoke models on Amazon Bedrock. Written in Rust, and LIVE on [Twitch](https://twitch.tv/ruptwelve).
+A neat way to invoke models on [Amazon Bedrock](https://aws.amazon.com/bedrock/). Written in Rust, and LIVE on [Twitch](https://twitch.tv/ruptwelve).
+
+**NOW WITH CHAT 💬** Yes, you can actually have a conversation with LLMs now🥳! Instead of it being able to just send one question at a time, you can now have contextual conversation with a LLM of your choice. This feature is available since version `0.6.0`.
 
 Currently supporting the following models:
 - Claude V2
@@ -62,7 +64,7 @@ Options:
   -h, --help                 Print help
   -V, --version              Print version
 ```
-Once, prompted enter your question, and hit `ENTER`. 🚀
+Once, prompted enter your question, and hit `ENTER`. 🚀 To quit the program, just type `/q` in your question prompt.
 
 ## Captioning images
 
@@ -102,7 +104,7 @@ Additionally you can customize captioning *prompt* and *supported image file for
 ## TODO
 - [x] Ability to get user input
 - [x] Being able to select a model
-- [ ] Have a conversation with the model
+- [x] Have a conversation with the model
 - [x] Stream the responses back word by word
 - [x] Better error handling
 - [ ] Code Testing

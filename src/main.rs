@@ -81,26 +81,53 @@ async fn main() -> Result<()> {
     } else {
         // default run
         utils::hello_header("Bedrust")?;
+        // STORE HISTORY:
+        let mut conversation_history = String::new();
         // get user input
-        let mut question = String::new();
-        println!("----------------------------------------");
-        println!("🤖 | What would you like to know today?");
-        print!("😎 | Human: ");
-        io::stdout().flush()?; // so the question is typed on the same line as above
-        io::stdin().read_line(&mut question)?;
+        loop {
+            println!("----------------------------------------");
+            println!("🤖 | What would you like to know today?");
+            print!("😎 | Human: ");
+            io::stdout().flush()?; // so the question is typed on the same line as above
+            
+            let mut question = String::new();
+            io::stdin().read_line(&mut question)?;
 
-        println!("----------------------------------------");
-        println!("☎️  | Calling Model: {}", &model_id);
-        println!("----------------------------------------");
-        ask_bedrock(
-            &question.to_string(),
-            None,
-            model_id,
-            RunType::Standard,
-            &bedrock_runtime_client,
-            &bedrock_client,
-        )
-        .await?;
+            let question = question.trim();
+            if question.is_empty() {
+                println!("Please enter a question.");
+                continue;
+            }
+            if question == "/q"{
+                println!("Bye!");
+                break;
+            } else if question.starts_with('/') {
+                utils::print_warning("Special command detected: /");
+                utils::print_warning("----------------------------------------");
+                utils::print_warning("Currently supported chat commands: ");
+                utils::print_warning("/q\t \t - Quit");
+                continue;
+            } 
+            conversation_history.push_str(question);
+            conversation_history.push('\n');
+
+            println!("----------------------------------------");
+            println!("☎️  | Calling Model: {}", &model_id);
+            println!("----------------------------------------");
+            let response = ask_bedrock(
+                //&question.to_string(),
+                &conversation_history.to_string(),
+                None,
+                model_id,
+                RunType::Standard,
+                &bedrock_runtime_client,
+                &bedrock_client,
+            )
+            .await?;
+            conversation_history.push_str(&response);
+            conversation_history.push('\n');
+
+        }
     }
 
     Ok(())

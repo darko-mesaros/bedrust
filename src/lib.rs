@@ -46,6 +46,7 @@ pub async fn configure_aws(s: String) -> aws_config::SdkConfig {
 }
 //======================================== END AWS
 
+#[derive(Debug)]
 pub enum RunType {
     Standard,
     Captioning,
@@ -374,12 +375,12 @@ pub async fn ask_bedrock(
             let bcall = mk_bedrock_call(question, image, model_id)?;
             // check if model supports streaming:
             if check_for_streaming(model_id.to_string(), bedrock_client).await? {
-                call_bedrock_stream(client, bcall).await?;
-                Ok("Nothing".to_string())
+                let response = call_bedrock_stream(client, bcall).await?;
+                Ok(response)
             } else {
                 // if it does not just call it
-                call_bedrock(client, bcall, run_type).await?;
-                Ok("Nothing".to_string())
+                let response = call_bedrock(client, bcall, run_type).await?;
+                Ok(response)
             }
         }
         RunType::Captioning => {
@@ -418,6 +419,10 @@ fn process_response(
             | "anthropic.claude-3-haiku-20240307-v1:0" => {
                 serde_json::from_slice::<ClaudeV3Response>(payload_bytes)
                     .map(|res| res.content[0].text.clone())
+            },
+            "ai21.j2-ultra-v1" => {
+                serde_json::from_slice::<Jurrasic2ResponseCompletions>(payload_bytes)
+                    .map(|res| res.completions[0].data.text.clone())
             }
             &_ => Err(serde_json::Error::custom("Unknown model ID")),
         }
@@ -455,10 +460,6 @@ fn process_response(
                     }
                 }
                 Ok(String::from(""))
-            }
-            "ai21.j2-ultra-v1" => {
-                serde_json::from_slice::<Jurrasic2ResponseCompletions>(payload_bytes)
-                    .map(|res| res.completions[0].data.text.clone())
             }
             "amazon.titan-text-express-v1" => {
                 serde_json::from_slice::<TitanTextV1Results>(payload_bytes)
@@ -502,7 +503,7 @@ async fn call_bedrock(
     }
 }
 
-async fn call_bedrock_stream(bc: &aws_sdk_bedrockruntime::Client, c: BedrockCall) -> Result<()> {
+async fn call_bedrock_stream(bc: &aws_sdk_bedrockruntime::Client, c: BedrockCall) -> Result<String, anyhow::Error> {
     let mut resp = bc
         .invoke_model_with_response_stream()
         .body(c.body)
@@ -522,9 +523,9 @@ async fn call_bedrock_stream(bc: &aws_sdk_bedrockruntime::Client, c: BedrockCall
                         process_response(c.model_id.as_str(), payload_bytes.as_ref(), true);
                     match response_text {
                         Ok(text) => {
-                            print!("{}", text);
-                            io::stdout().flush().unwrap();
-                            output += &text;
+                            output.push_str(&text);
+                            print!("{}", &text);
+                            io::stdout().flush()?;
                         }
                         Err(e) => eprintln!("Error processing response: {}", e),
                     }
@@ -533,5 +534,6 @@ async fn call_bedrock_stream(bc: &aws_sdk_bedrockruntime::Client, c: BedrockCall
             otherwise => panic!("received unexpected event type: {:?}", otherwise),
         }
     }
-    Ok(())
+    println!();
+    Ok(output)
 }
