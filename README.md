@@ -35,21 +35,39 @@ darko@devbox [~/workspace/projects/bedrust]: aws sts get-caller-identity
 ```
 Oh, yeah, make sure the user whose credentials you configure has permissions to `InvokeModel` on Amazon Bedrock.
 
-### Make sure you have Rust installed 🦀
+### Make sure you have Rust and requrements installed 🦀
 
-Well that just makes sense, this is a **Rust** application. The easiest way to get started is by using [rustup](https://www.rust-lang.org/tools/install)
+Well that just makes sense, this is a **Rust** application. The easiest way to get started is by using [rustup](https://www.rust-lang.org/tools/install). 
 
-### Clone the Repository 💾
+Now, you need some additional packages to be able to compile **bedrust**. Namely you need the `build-essential` (or similar) package group. Depending on your operating system, and package manager the name may differ.
 
-As of version `0.7.0` there is still not package available on crates.io (for now). So to install this package you need to first clone this repo locally.
-
+**Ubuntu/Debian:**
 ```
-git clone https://github.com/darko-mesaros/bedrust && cd bedrust
+sudo apt install build-essential
+```
+
+**Arch Linux:**
+```
+sudo pacman -S base-devel
+```
+
+**MacOS:**
+```
+xcode-select --install
+```
+
+**Amazon Linux/Red Hat/CentOS:**
+```
+yum groupinstall "Development Tools"
 ```
 
 ### Install it locally
 
-To install the application locally, make sure you are located in the root of this repository and then run `cargo install --path .`. This will install the compiled binary into your `$CARGO_HOME/bin` directory. If you have the `$PATH` set up correctly you should be able to run it now. But before you do ...
+To install the application locally, just run:
+```
+cargo install bedrust
+```
+This will install the compiled binary into your `$CARGO_HOME/bin` directory. If you have the `$PATH` set up correctly you should be able to run it now. But before you do ...
 
 Let's initialize the configuration. Because **bedrust** uses two configuration files (`bedrust_config.ron` and `model_config.ron`) they (along with some other resources) need to be stored inside of your `$HOME/.config/bedrust` directory. *Now*, you can do this manually, but we have a feature to do it for you. Just run:
 ```
