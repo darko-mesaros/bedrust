@@ -1,28 +1,39 @@
+use anyhow::anyhow;
 use clap::Parser;
 use figlet_rs::FIGfont;
 
-use std::{fs, io, path::PathBuf};
+use std::{fs, path::PathBuf};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 use serde::{Deserialize, Serialize};
 
 use colored::*;
 
+use dirs::home_dir;
+
+use crate::constants;
+
 // ######################################## ARGUMENT PARSING
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 pub struct Args {
+    #[arg(long, conflicts_with("model_id"))]
+    pub init: bool,
+
     #[clap(value_enum)]
-    #[arg(short, long)]
-    pub model_id: ArgModels,
+    #[arg(short, long, required_unless_present("init"))]
+    pub model_id: Option<ArgModels>,
+
     #[arg(short, long)]
     pub caption: Option<PathBuf>,
+
     #[arg(short)]
     pub xml: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct BedrustConfig {
+    pub aws_profile: String,
     pub supported_images: Vec<String>,
     pub caption_prompt: String,
 }
@@ -59,8 +70,15 @@ impl ArgModels {
 }
 // ######################################## END ARGUMENT PARSING
 
-pub fn hello_header(s: &str) -> io::Result<()> {
-    let ansi_font = FIGfont::from_file("resources/ansishadow.flf").unwrap();
+pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
+    let home_dir = home_dir().expect("Failed to get HOME directory");
+    let config_dir = home_dir.join(format!(".config/{}", constants::CONFIG_DIR_NAME));
+    let figlet_font_file_path = config_dir.join(constants::FIGLET_FONT_FILENAME);
+    let figlet_path_str = figlet_font_file_path
+        .as_path()
+        .to_str()
+        .ok_or_else(||anyhow!("Was unable to parse Figlet font path to string"))?;
+    let ansi_font = FIGfont::from_file(figlet_path_str).unwrap();
     let hello = ansi_font.convert(s);
 
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
@@ -76,8 +94,12 @@ pub fn hello_header(s: &str) -> io::Result<()> {
     Ok(())
 }
 
-pub fn load_bedrust_config(f: String) -> Result<BedrustConfig, anyhow::Error> {
-    let file = fs::File::open(f)?;
+pub fn load_bedrust_config() -> Result<BedrustConfig, anyhow::Error> {
+    let home_dir = home_dir().expect("Failed to get HOME directory");
+    let config_dir = home_dir.join(format!(".config/{}", constants::CONFIG_DIR_NAME));
+    let bedrust_config_file_path = config_dir.join(constants::BEDRUST_CONFIG_FILE_NAME);
+
+    let file = fs::File::open(bedrust_config_file_path)?;
     let config: BedrustConfig = ron::de::from_reader(file)?;
     Ok(config)
 }
@@ -85,3 +107,64 @@ pub fn load_bedrust_config(f: String) -> Result<BedrustConfig, anyhow::Error> {
 pub fn print_warning(s: &str) {
     println!("{}", s.yellow());
 }
+// TODO: Implement checking for AWS credentials
+
+// function that checks if there are any configuration files present
+pub fn check_for_config() -> Result<bool, anyhow::Error> {
+    let home_dir = home_dir().expect("Failed to get HOME directory");
+    let config_dir = home_dir.join(".config/bedrust");
+    let bedrust_config_file_path = config_dir.join("bedrust_config.ron");
+    let model_config_file_path = config_dir.join("model_config.ron");
+
+    if !bedrust_config_file_path.exists() || !model_config_file_path.exists() {
+        Ok(false)
+    } else { 
+        Ok(true)
+    }
+
+}
+
+// function that creates the configuration files during the `init` command
+pub fn initialize_config() -> Result<(), anyhow::Error>{
+    let home_dir = home_dir().expect("Failed to get HOME directory");
+    let config_dir = home_dir.join(format!(".config/{}", constants::CONFIG_DIR_NAME));
+    fs::create_dir_all(&config_dir)?;
+
+    let bedrust_config_file_path = config_dir.join(constants::BEDRUST_CONFIG_FILE_NAME);
+    let bedrust_config_content = constants::BEDRUST_CONFIG_FILE.to_string();
+    fs::write(&bedrust_config_file_path, bedrust_config_content)?;
+    println!("⏳| Bedrust configuration file created at: {:?}", bedrust_config_file_path);
+    println!("This file is used to store configuration items for the bedrust application.");
+
+    let model_config_file_path = config_dir.join(constants::MODEL_CONFIG_FILE_NAME);
+    let model_config_content = constants::MODEL_CONFIG_FILE.to_string();
+    fs::write(&model_config_file_path, model_config_content)?;
+    println!("⏳| Model configuration file created at: {:?}", model_config_file_path);
+    println!("This file is used to store default model parameters such as max tokens, temperature, top_p, top_k, etc.");
+
+    let figlet_font_file_path = config_dir.join(constants::FIGLET_FONT_FILENAME);
+    let figlet_font_content = constants::FIGLET_FONT;
+    fs::write(&figlet_font_file_path, figlet_font_content)?;
+    println!("⏳| Figlet font created at: {:?}", figlet_font_file_path);
+    println!("This file is used to as a font for `figlet` to create the nice big font during launch.");
+
+    println!("✅ | Bedrust configuration has been initialized in ~/.config/bedrust. You may now use it as normal.");
+    Ok(())
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

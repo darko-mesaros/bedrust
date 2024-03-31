@@ -1,6 +1,7 @@
 pub mod captioner;
 pub mod models;
 pub mod utils;
+pub mod constants;
 
 use anyhow::anyhow;
 use aws_config::meta::region::RegionProviderChain;
@@ -18,7 +19,7 @@ use aws_sdk_bedrockruntime::primitives::Blob;
 use aws_sdk_bedrockruntime::types::ResponseStream;
 
 use models::check_for_streaming;
-use models::load_config;
+use models::load_model_config;
 
 use models::claude::{ClaudeBody, ClaudeResponse};
 use models::claudev3::{ClaudeImageSource, ClaudeV3Body, ClaudeV3Response};
@@ -33,14 +34,19 @@ use std::io::Write;
 use crate::captioner::Image;
 
 //======================================== AWS
-pub async fn configure_aws(s: String) -> aws_config::SdkConfig {
-    let provider =
+pub async fn configure_aws(s: String, p: String) -> aws_config::SdkConfig {
+    let region_provider =
         RegionProviderChain::first_try(env::var("AWS_DEFAULT_REGION").ok().map(Region::new))
             .or_default_provider()
             .or_else(Region::new(s));
 
+
     aws_config::defaults(BehaviorVersion::latest())
-        .region(provider)
+        .credentials_provider(aws_config::profile::ProfileFileCredentialsProvider::builder()
+            .profile_name(p)
+            .build()
+        )
+        .region(region_provider)
         .load()
         .await
 }
@@ -164,8 +170,7 @@ fn q_to_bcs_with_defaults(
     image: Option<&Image>,
 ) -> Result<BedrockCallSum, anyhow::Error> {
     // call the function to load model settings:
-    // TODO: do not hardcode the name and path of the config file
-    let model_defaults = load_config(String::from("model_config.ron"))?;
+    let model_defaults = load_model_config()?;
 
     match model_id {
         "meta.llama2-70b-chat-v1" => {

@@ -170,7 +170,7 @@ mod tests {
         fs::File::create(&file5_path).unwrap();
 
         // load supported file extensions
-        let config = load_bedrust_config(String::from("bedrust_config.ron")).unwrap();
+        let config = load_bedrust_config().unwrap();
 
         let list =
             list_files_in_path_by_extension(PathBuf::from(dir_path), config.supported_images);

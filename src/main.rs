@@ -1,4 +1,5 @@
 mod utils;
+pub mod constants;
 use std::io;
 use std::io::Write;
 
@@ -15,22 +16,69 @@ use bedrust::captioner::list_files_in_path_by_extension;
 use bedrust::captioner::write_captions;
 use bedrust::captioner::Image;
 use bedrust::captioner::OutputFormat;
+use bedrust::utils::{print_warning, check_for_config, initialize_config};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // parsing arguments
     let arguments = utils::Args::parse();
+    // Checking for the `--init` flag and then initializing the configuration
+    if arguments.init {
+        if check_for_config()? {
+            print_warning("****************************************");
+            print_warning("WARNING:");
+            println!("You are trying to initialize the Bedrust configuration");
+            println!("This will overwrite your configuration files in $HOME/.config/bedrust/");
+            print!("ARE YOU SURE YOU WANT DO TO THIS? Y/N: ");
+            io::stdout().flush()?; // so the answers are typed on the same line as above
+            
+            let mut confirmation = String::new();
+            io::stdin().read_line(&mut confirmation)?;
+            if confirmation.trim().eq_ignore_ascii_case("y") {
+                print_warning("I ask AGAIN");
+                print!("ARE YOU SURE YOU WANT DO TO THIS? Y/N: ");
+                io::stdout().flush()?; // so the answers are typed on the same line as above
+
+                let mut confirmation = String::new();
+                io::stdin().read_line(&mut confirmation)?;
+
+                if confirmation.trim().eq_ignore_ascii_case("y") {
+                    println!("----------------------------------------");
+                    println!("📜 | Initializing Bedrust configuration.");
+                    initialize_config()?;
+                }
+            }         
+        } else {
+            println!("----------------------------------------");
+            println!("📜 | Initializing Bedrust configuration.");
+            initialize_config()?;
+        }
+        print_warning("Bedrust will now exit");
+        std::process::exit(0);
+    }
+    // checking if the configuration files exist
+    if !check_for_config()? {
+        print_warning("****************************************");
+        print_warning("WARNING:");
+        println!("Your Bedrust configuration files are not set up correctly.");
+        println!("To use Bedrust you need the appropriate `bedrust_config.ron and `model_config.ron` in your $HOME/.config/bedrust/ directory.");
+        println!("You can configure the application by running `bedrust --init`");
+        print_warning("****************************************");
+        print_warning("Bedrust will now exit");
+        std::process::exit(1);
+    }
     // load bedrust config file
-    let bedrust_config = utils::load_bedrust_config(String::from("bedrust_config.ron"))?;
+    let bedrust_config = utils::load_bedrust_config()?;
+    
     // configuring the SDK
-    let config = configure_aws(String::from("us-west-2")).await;
+    let config = configure_aws(String::from("us-west-2"), bedrust_config.aws_profile).await;
     // setup the bedrock-runtime client
     let bedrock_runtime_client = aws_sdk_bedrockruntime::Client::new(&config);
     // setup the bedrock client
     let bedrock_client = aws_sdk_bedrock::Client::new(&config);
 
     //let question = "Which songs are listed in the youtube video 'evolution of dance'?";
-    let model_id = arguments.model_id.to_str();
+    let model_id = arguments.model_id.ok_or_else(||anyhow!("Unable to parse the Model ID"))?.to_str();
 
     // if we enabled captioning of images
     if arguments.caption.is_some() {

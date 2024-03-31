@@ -1,4 +1,12 @@
-ModelConfigs(
+// This file contains constants (duh)
+
+// CONFIGURATION FILES
+pub static CONFIG_DIR_NAME: &str = "bedrust";
+pub static MODEL_CONFIG_FILE_NAME: &str = "model_config.ron";
+pub static BEDRUST_CONFIG_FILE_NAME: &str = "bedrust_config.ron";
+
+// UPDATED: 2024-03-30
+pub static MODEL_CONFIG_FILE: &str = r#"ModelConfigs(
   llama270b: (
     temperature: 1, 
     p: 0.1,
@@ -59,3 +67,15 @@ ModelConfigs(
       stop: [],
   )
 )
+"#;
+
+// UPDATED: 2024-03-30
+pub static BEDRUST_CONFIG_FILE: &str = r#"BedrustConfig(
+  aws_profile: "default",
+  supported_images: ["jpg", "jpeg", "png", "bmp",],
+  caption_prompt: "Please caption the following image for the sake of accessibility. Return just the caption, and nothing else. Keep it clean, and under 100 words."
+)
+"#;
+// FIGLET FONT
+pub static FIGLET_FONT_FILENAME: &str = "ansishadow.flf";
+pub const FIGLET_FONT: &str = include_str!("../resources/ansishadow.flf");
