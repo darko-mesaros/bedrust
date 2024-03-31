@@ -1,5 +1,6 @@
 [package]
 name = "bedrust"
+description = "A command line tool to invoke and work with Large Language models on AWS, using Amazon Bedrock"
 version = "0.7.0"
 edition = "2021"
 authors = ["Darko Mesaros <d@rko.rs>"]
