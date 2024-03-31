@@ -20,6 +20,10 @@ use serde::{Deserialize, Serialize};
 
 use std::fs;
 
+use dirs::home_dir;
+
+use crate::constants;
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ModelConfigs {
     pub llama270b: Llama270bConfig,
@@ -33,8 +37,11 @@ pub struct ModelConfigs {
     pub mistral_7b_instruct: Mistral7bInstruct,
 }
 
-pub fn load_config(f: String) -> Result<ModelConfigs> {
-    let file = fs::File::open(f)?;
+pub fn load_model_config() -> Result<ModelConfigs> {
+    let home_dir = home_dir().expect("Failed to get HOME directory");
+    let config_dir = home_dir.join(format!(".config/{}", constants::CONFIG_DIR_NAME));
+    let model_config_file_path = config_dir.join(constants::MODEL_CONFIG_FILE_NAME);
+    let file = fs::File::open(model_config_file_path)?;
     let config: ModelConfigs = ron::de::from_reader(file)?;
     Ok(config)
 }

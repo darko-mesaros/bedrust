@@ -41,16 +41,27 @@ Well that just makes sense, this is a **Rust** application. The easiest way to g
 
 ### Clone the Repository 💾
 
-As of this date, there is no way to *install* this tool to your machine in a traditional sense. Some elements are hardcoded paths (ie the `model_config.ron` file). And thus, the way you use **Bedrust** is by cloning this repository somewhere locally:
+As of version `0.7.0` there is still not package available on crates.io (for now). So to install this package you need to first clone this repo locally.
+
 ```
 git clone https://github.com/darko-mesaros/bedrust && cd bedrust
 ```
+
+### Install it locally
+
+To install the application locally, make sure you are located in the root of this repository and then run `cargo install --path .`. This will install the compiled binary into your `$CARGO_HOME/bin` directory. If you have the `$PATH` set up correctly you should be able to run it now. But before you do ...
+
+Let's initialize the configuration. Because **bedrust** uses two configuration files (`bedrust_config.ron` and `model_config.ron`) they (along with some other resources) need to be stored inside of your `$HOME/.config/bedrust` directory. *Now*, you can do this manually, but we have a feature to do it for you. Just run:
+```
+bedrust --init
+```
+This will create all the necessary files for you to be able to use **bedrust**. There is no need to modify these files, unless you want to.
 
 ### Running the application 🚀
 
 Finally, to run the application just use the following `cargo` command:
 ```bash
-cargo run -- -m <MODELNAME> # replacing the model name with one of the supported ones
+bedrust -m <MODELNAME> # replacing the model name with one of the supported ones
 ```
 
 ## Usage
@@ -58,6 +69,7 @@ cargo run -- -m <MODELNAME> # replacing the model name with one of the supported
 Usage: bedrust [OPTIONS] --model-id <MODEL_ID>
 
 Options:
+      --init
   -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, claude-v21, claude-v3-sonnet, claude-v3-haiku, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct]
   -c, --caption <CAPTION>
   -x
@@ -77,7 +89,7 @@ Once, prompted enter your question, and hit `ENTER`. 🚀 To quit the program, j
 To use captioning you just need to pass it the `-c` parameter, along with the directory where you have your images:
 
 ```bash
-cargo run -- -m claude-v3-sonnet -c /tmp/test-images/
+bedrust -m claude-v3-sonnet -c /tmp/test-images/
 ```
 This will retrieve the supported images, and produce captions for them. Ultimately producing a `captions.json` file in the current working directory with the captions connected to image paths.
 
@@ -100,6 +112,15 @@ Here is an example of the output:
 ```
 
 Additionally you can customize captioning *prompt* and *supported image file formats* by editing the `bedrust_config.ron` file in the root of this project.
+
+## Configuration files 
+
+There are two important configuration files that ship with **bedrust**:
+
+- `bedrust_config.ron` - stores configuration parameters related to the application itself.
+- `model_config.ron` - stores configuration parameters related to the LLMs. Things like max tokens, temperature, top_p, top_k, etc.
+
+They *need* to be in your `$HOME/.config/bedrust/` directory. The application will warn you if they do not exist, and fail to run. You can create them automatically by running `bedrust --init`
 
 ## TODO
 - [x] Ability to get user input

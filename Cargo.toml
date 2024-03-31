@@ -1,10 +1,10 @@
 [package]
 name = "bedrust"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2021"
 authors = ["Darko Mesaros <d@rko.rs>"]
 license = "MIT OR Apache-2.0"
-keywords = ["aws", "generativeai"]
+keywords = ["aws", "generativeai", "bedrock", "chatbot"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
@@ -16,6 +16,7 @@ aws-types = "1.1.5"
 base64 = "0.22.0"
 clap = { version = "4.5.0", features = ["derive"] }
 colored = "2.1.0"
+dirs = "5.0.1"
 figlet-rs = "0.1.5"
 futures = "0.3.30"
 image = "0.25.0"
