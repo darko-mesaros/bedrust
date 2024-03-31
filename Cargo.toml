@@ -8,6 +8,9 @@ keywords = ["aws", "generativeai", "bedrock", "chatbot"]
 readme = "README.md"
 homepage = "https://rup12.net"
 repository = "https://github.com/darko-mesaros/bedrust"
+exclude = [
+"img/*"
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
