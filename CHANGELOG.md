@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO: Ability to generate images
 - TODO: Better code testing
 
+## [0.7.1] - 2024-03-31
+### Changed
+- Updated README to include additional package requirements for compiling.
+
 ## [0.7.0] - 2024-03-30
 ### Added
 - Inital version of this crate that has the abiliuty to be hosted on [crates.io](https://crates.io)
