@@ -1,5 +1,3 @@
-use anyhow::Result;
-use aws_sdk_bedrockruntime::primitives::Blob;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -44,12 +42,6 @@ impl TitanTextV1Body {
             input_text,
             text_generation_config: text_gen_config,
         }
-    }
-
-    pub fn convert_to_blob(&self) -> Result<Blob> {
-        let blob_string = serde_json::to_vec(&self)?;
-        let body: Blob = Blob::new(blob_string);
-        Ok(body)
     }
 }
 

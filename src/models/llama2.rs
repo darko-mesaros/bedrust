@@ -1,5 +1,3 @@
-use anyhow::Result;
-use aws_sdk_bedrockruntime::primitives::Blob;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -25,12 +23,6 @@ impl Llama2Body {
             top_p,
             max_gen_len,
         }
-    }
-
-    pub fn convert_to_blob(&self) -> Result<Blob> {
-        let blob_string = serde_json::to_vec(&self)?;
-        let body: Blob = Blob::new(blob_string);
-        Ok(body)
     }
 }
 
