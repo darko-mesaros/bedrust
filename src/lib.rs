@@ -495,11 +495,12 @@ async fn call_bedrock(
     }
 }
 
+/// Add context and advice for specific error variants
 fn give_bedrock_hints(err: impl Into<aws_sdk_bedrockruntime::Error>) -> anyhow::Error {
     let err = err.into();
     let context = match &err {
         aws_sdk_bedrockruntime::Error::AccessDeniedException(_err) => {
-            Some("hint: Models must be enabled for a specific region! bedrust uses us-west-2.")
+            Some("hint: If you belive you have enabled this model, note that access MUST be enabled for a specific region!")
         }
         _ => None,
     };
@@ -507,6 +508,8 @@ fn give_bedrock_hints(err: impl Into<aws_sdk_bedrockruntime::Error>) -> anyhow::
     if let Some(context) = context {
         anyhow_err = anyhow_err.context(context);
     }
+    anyhow_err = anyhow_err.context("failed to invoke bedrock");
+
     anyhow_err
 }
 
