@@ -1,14 +1,13 @@
-mod utils;
-pub mod constants;
 use std::io;
 use std::io::Write;
 
 use anyhow::anyhow;
 use anyhow::Result;
-use clap::Parser;
+use bedrust::utils;
 
 use bedrust::ask_bedrock;
 use bedrust::configure_aws;
+use bedrust::utils::prompt_for_model_selection;
 use bedrust::RunType;
 
 use bedrust::captioner::caption_image;
@@ -16,7 +15,8 @@ use bedrust::captioner::list_files_in_path_by_extension;
 use bedrust::captioner::write_captions;
 use bedrust::captioner::Image;
 use bedrust::captioner::OutputFormat;
-use bedrust::utils::{print_warning, check_for_config, initialize_config};
+use bedrust::utils::{check_for_config, initialize_config, print_warning};
+use clap::Parser;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
             println!("This will overwrite your configuration files in $HOME/.config/bedrust/");
             print!("ARE YOU SURE YOU WANT DO TO THIS? Y/N: ");
             io::stdout().flush()?; // so the answers are typed on the same line as above
-            
+
             let mut confirmation = String::new();
             io::stdin().read_line(&mut confirmation)?;
             if confirmation.trim().eq_ignore_ascii_case("y") {
@@ -47,7 +47,7 @@ async fn main() -> Result<()> {
                     println!("📜 | Initializing Bedrust configuration.");
                     initialize_config()?;
                 }
-            }         
+            }
         } else {
             println!("----------------------------------------");
             println!("📜 | Initializing Bedrust configuration.");
@@ -69,7 +69,7 @@ async fn main() -> Result<()> {
     }
     // load bedrust config file
     let bedrust_config = utils::load_bedrust_config()?;
-    
+
     // configuring the SDK
     let config = configure_aws(String::from("us-west-2"), bedrust_config.aws_profile).await;
     // setup the bedrock-runtime client
@@ -78,7 +78,13 @@ async fn main() -> Result<()> {
     let bedrock_client = aws_sdk_bedrock::Client::new(&config);
 
     //let question = "Which songs are listed in the youtube video 'evolution of dance'?";
-    let model_id = arguments.model_id.ok_or_else(||anyhow!("Unable to parse the Model ID"))?.to_str();
+    let model_id = arguments
+        .model_id
+        .or(bedrust_config.default_model);
+    let model_id = match model_id {
+        Some(model_id) => model_id,
+        None => prompt_for_model_selection()?
+    }.to_str();
 
     // if we enabled captioning of images
     if arguments.caption.is_some() {
@@ -137,7 +143,7 @@ async fn main() -> Result<()> {
             println!("🤖 | What would you like to know today?");
             print!("😎 | Human: ");
             io::stdout().flush()?; // so the question is typed on the same line as above
-            
+
             let mut question = String::new();
             io::stdin().read_line(&mut question)?;
 
@@ -146,7 +152,7 @@ async fn main() -> Result<()> {
                 println!("Please enter a question.");
                 continue;
             }
-            if question == "/q"{
+            if question == "/q" {
                 println!("Bye!");
                 break;
             } else if question.starts_with('/') {
@@ -155,7 +161,7 @@ async fn main() -> Result<()> {
                 utils::print_warning("Currently supported chat commands: ");
                 utils::print_warning("/q\t \t - Quit");
                 continue;
-            } 
+            }
             conversation_history.push_str(question);
             conversation_history.push('\n');
 
@@ -174,7 +180,6 @@ async fn main() -> Result<()> {
             .await?;
             conversation_history.push_str(&response);
             conversation_history.push('\n');
-
         }
     }
 

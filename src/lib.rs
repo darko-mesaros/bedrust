@@ -1,16 +1,18 @@
 pub mod captioner;
+pub mod constants;
 pub mod models;
 pub mod utils;
-pub mod constants;
 
 use anyhow::anyhow;
 use aws_config::meta::region::RegionProviderChain;
 use aws_config::BehaviorVersion;
 use aws_types::region::Region;
 use core::panic;
+use models::cohere::Blobbable;
 use serde::ser::Error;
 use serde::Deserialize;
 use serde_json::Value;
+
 use std::{env, io};
 
 use anyhow::Result;
@@ -34,17 +36,18 @@ use std::io::Write;
 use crate::captioner::Image;
 
 //======================================== AWS
-pub async fn configure_aws(s: String, p: String) -> aws_config::SdkConfig {
+pub async fn configure_aws(fallback_region: String, profile_name: String) -> aws_config::SdkConfig {
     let region_provider =
+        // NOTE: this is different than the default Rust SDK behavior which checks AWS_REGION first. Is this intentional?
         RegionProviderChain::first_try(env::var("AWS_DEFAULT_REGION").ok().map(Region::new))
             .or_default_provider()
-            .or_else(Region::new(s));
-
+            .or_else(Region::new(fallback_region));
 
     aws_config::defaults(BehaviorVersion::latest())
-        .credentials_provider(aws_config::profile::ProfileFileCredentialsProvider::builder()
-            .profile_name(p)
-            .build()
+        .credentials_provider(
+            aws_config::profile::ProfileFileCredentialsProvider::builder()
+                .profile_name(profile_name)
+                .build(),
         )
         .region(region_provider)
         .load()
@@ -61,13 +64,19 @@ pub enum RunType {
 #[derive(Debug)]
 struct BedrockCall {
     pub body: Blob,
-    pub content_type: String,
-    pub accept: String,
+    pub content_type: &'static str,
+    pub accept: &'static str,
     pub model_id: String,
 }
 
 impl BedrockCall {
-    fn new(body: Blob, content_type: String, accept: String, model_id: String) -> BedrockCall {
+    fn new(
+        body: &dyn Blobbable,
+        content_type: &'static str,
+        accept: &'static str,
+        model_id: String,
+    ) -> BedrockCall {
+        let body = body.to_blob();
         BedrockCall {
             body,
             content_type,
@@ -81,32 +90,32 @@ impl BedrockCall {
 // this will not necessarily be a 1-to-1 mapping. For example, minor
 // version updates to the model will have the same body, but differnet
 // values than in ArgModels. Thus, |ArgModels| >= |BedrockCallSum|.
-enum BedrockCallSum {
-    CohereBCS {
+enum ModelOptions {
+    Cohere {
         model_id: String,
         body: CohereBody,
     },
-    ClaudeBCS {
+    Claude {
         model_id: String,
         body: ClaudeBody,
     },
-    Claude3BCS {
+    Claude3 {
         model_id: String,
         body: ClaudeV3Body,
     },
-    Llama2BCS {
+    Llama2 {
         model_id: String,
         body: Llama2Body,
     },
-    Jurrasic2BCS {
+    Jurrasic2 {
         model_id: String,
         body: Jurrasic2Body,
     },
-    TitanTextBCS {
+    TitanText {
         model_id: String,
         body: TitanTextV1Body,
     },
-    Mistral7bBCS {
+    Mistral7b {
         model_id: String,
         body: Mistral7Body,
     },
@@ -115,60 +124,39 @@ enum BedrockCallSum {
 // Using a sum type to represent all models that can go through here.
 // This way if each model needs special processing to make a BedrockCall
 // that can be implemented in one place.
-fn bcs_to_bedrock_call(bcs: BedrockCallSum) -> Result<BedrockCall> {
+fn model_options_to_bedrock_call(bcs: ModelOptions) -> Result<BedrockCall> {
     match bcs {
-        BedrockCallSum::CohereBCS { model_id, body } => Ok(BedrockCall::new(
-            body.convert_to_blob()?,
-            "application/json".to_string(),
-            "*/*".to_string(),
-            model_id,
-        )),
-        BedrockCallSum::ClaudeBCS { model_id, body } => Ok(BedrockCall::new(
-            body.convert_to_blob()?,
-            "application/json".to_string(),
-            "*/*".to_string(),
-            model_id,
-        )),
-        BedrockCallSum::Claude3BCS { model_id, body } => Ok(BedrockCall::new(
-            body.convert_to_blob()?,
-            "application/json".to_string(),
-            "*/*".to_string(),
-            model_id,
-        )),
-        BedrockCallSum::Llama2BCS { model_id, body } => Ok(BedrockCall::new(
-            body.convert_to_blob()?,
-            "application/json".to_string(),
-            "*/*".to_string(),
-            model_id,
-        )),
-        BedrockCallSum::Jurrasic2BCS { model_id, body } => Ok(BedrockCall::new(
-            body.convert_to_blob()?,
-            "application/json".to_string(),
-            "*/*".to_string(),
-            model_id,
-        )),
-        BedrockCallSum::TitanTextBCS { model_id, body } => Ok(BedrockCall::new(
-            body.convert_to_blob()?,
-            "application/json".to_string(),
-            "*/*".to_string(),
-            model_id,
-        )),
-        BedrockCallSum::Mistral7bBCS { model_id, body } => Ok(BedrockCall::new(
-            body.convert_to_blob()?,
-            "application/json".to_string(),
-            "*/*".to_string(),
-            model_id,
-        )),
+        ModelOptions::Cohere { model_id, body } => {
+            Ok(BedrockCall::new(&body, "application/json", "*/*", model_id))
+        }
+        ModelOptions::Claude { model_id, body } => {
+            Ok(BedrockCall::new(&body, "application/json", "*/*", model_id))
+        }
+        ModelOptions::Claude3 { model_id, body } => {
+            Ok(BedrockCall::new(&body, "application/json", "*/*", model_id))
+        }
+        ModelOptions::Llama2 { model_id, body } => {
+            Ok(BedrockCall::new(&body, "application/json", "*/*", model_id))
+        }
+        ModelOptions::Jurrasic2 { model_id, body } => {
+            Ok(BedrockCall::new(&body, "application/json", "*/*", model_id))
+        }
+        ModelOptions::TitanText { model_id, body } => {
+            Ok(BedrockCall::new(&body, "application/json", "*/*", model_id))
+        }
+        ModelOptions::Mistral7b { model_id, body } => {
+            Ok(BedrockCall::new(&body, "application/json", "*/*", model_id))
+        }
     }
 }
 
-// Create a BedrockCallSum with sensible defaults for each model.
+// Create a `ModelOptions` with sensible defaults for each model.
 // This will fail if model_id is not known to q_to_bcs_with_defaults.
-fn q_to_bcs_with_defaults(
+fn convert_question_to_model_options(
     question: Option<String>,
     model_id: &str,
     image: Option<&Image>,
-) -> Result<BedrockCallSum, anyhow::Error> {
+) -> Result<ModelOptions, anyhow::Error> {
     // call the function to load model settings:
     let model_defaults = load_model_config()?;
 
@@ -182,7 +170,7 @@ fn q_to_bcs_with_defaults(
                 d.p,
                 d.max_gen_len,
             );
-            Ok(BedrockCallSum::Llama2BCS {
+            Ok(ModelOptions::Llama2 {
                 model_id: String::from("meta.llama2-70b-chat-v1"),
                 body: llama2_body,
             })
@@ -201,7 +189,7 @@ fn q_to_bcs_with_defaults(
                 d.stream,
             );
 
-            Ok(BedrockCallSum::CohereBCS {
+            Ok(ModelOptions::Cohere {
                 model_id: String::from("cohere.command-text-v14"),
                 body: cohere_body,
             })
@@ -216,7 +204,7 @@ fn q_to_bcs_with_defaults(
                 d.max_tokens,
                 d.stop_sequences,
             );
-            Ok(BedrockCallSum::Jurrasic2BCS {
+            Ok(ModelOptions::Jurrasic2 {
                 model_id: String::from("ai21.j2-ultra-v1"),
                 body: jurrasic_body,
             })
@@ -233,7 +221,7 @@ fn q_to_bcs_with_defaults(
                 d.max_tokens_to_sample,
                 d.stop_sequences,
             );
-            Ok(BedrockCallSum::ClaudeBCS {
+            Ok(ModelOptions::Claude {
                 model_id: String::from("anthropic.claude-v2"),
                 body: claude_body,
             })
@@ -257,7 +245,7 @@ fn q_to_bcs_with_defaults(
                 question,
                 claude_image,
             );
-            Ok(BedrockCallSum::Claude3BCS {
+            Ok(ModelOptions::Claude3 {
                 model_id: String::from("anthropic.claude-3-sonnet-20240229-v1:0"),
                 body: claudev3_body,
             })
@@ -281,7 +269,7 @@ fn q_to_bcs_with_defaults(
                 question,
                 claude_image,
             );
-            Ok(BedrockCallSum::Claude3BCS {
+            Ok(ModelOptions::Claude3 {
                 model_id: String::from("anthropic.claude-3-haiku-20240307-v1:0"),
                 body: claudev3_body,
             })
@@ -299,7 +287,7 @@ fn q_to_bcs_with_defaults(
                 d.max_tokens_to_sample,
                 d.stop_sequences,
             );
-            Ok(BedrockCallSum::ClaudeBCS {
+            Ok(ModelOptions::Claude {
                 model_id: String::from("anthropic.claude-v2:1"),
                 body: claude_body,
             })
@@ -315,7 +303,7 @@ fn q_to_bcs_with_defaults(
                 d.max_token_count,
                 d.stop_sequences,
             );
-            Ok(BedrockCallSum::TitanTextBCS {
+            Ok(ModelOptions::TitanText {
                 model_id: String::from("amazon.titan-text-express-v1"),
                 body: titan_body,
             })
@@ -330,7 +318,7 @@ fn q_to_bcs_with_defaults(
                 d.max_tokens,
                 d.stop,
             );
-            Ok(BedrockCallSum::Mistral7bBCS {
+            Ok(ModelOptions::Mistral7b {
                 model_id: String::from("mistral.mixtral-8x7b-instruct-v0:1"),
                 body: mixtral_body,
             })
@@ -345,7 +333,7 @@ fn q_to_bcs_with_defaults(
                 d.max_tokens,
                 d.stop,
             );
-            Ok(BedrockCallSum::Mistral7bBCS {
+            Ok(ModelOptions::Mistral7b {
                 model_id: String::from("mistral.mistral-7b-instruct-v0:2"),
                 body: mixtral_body,
             })
@@ -361,8 +349,8 @@ fn mk_bedrock_call(
     image: Option<&Image>,
     model_id: &str,
 ) -> Result<BedrockCall> {
-    let bcs = q_to_bcs_with_defaults(Some(question.to_string()), model_id, image)?;
-    bcs_to_bedrock_call(bcs)
+    let bcs = convert_question_to_model_options(Some(question.to_string()), model_id, image)?;
+    model_options_to_bedrock_call(bcs)
 }
 
 // Given a question and model_id, create and execute a call to bedrock.
@@ -402,9 +390,7 @@ pub async fn ask_bedrock(
                 let caption = call_bedrock(client, bcall, run_type).await?;
                 Ok(caption)
             } else {
-                Err(anyhow!(
-                    "No images provided. Captioning aborted."
-                ))
+                Err(anyhow!("No images provided. Captioning aborted."))
             }
         }
     }
@@ -424,7 +410,7 @@ fn process_response(
             | "anthropic.claude-3-haiku-20240307-v1:0" => {
                 serde_json::from_slice::<ClaudeV3Response>(payload_bytes)
                     .map(|res| res.content[0].text.clone())
-            },
+            }
             "ai21.j2-ultra-v1" => {
                 serde_json::from_slice::<Jurrasic2ResponseCompletions>(payload_bytes)
                     .map(|res| res.completions[0].data.text.clone())
@@ -493,7 +479,8 @@ async fn call_bedrock(
         .accept(c.accept)
         .model_id(&c.model_id)
         .send()
-        .await?;
+        .await
+        .map_err(give_bedrock_hints)?;
 
     let response_text = process_response(c.model_id.as_str(), response.body.as_ref(), false);
     match response_text {
@@ -508,7 +495,28 @@ async fn call_bedrock(
     }
 }
 
-async fn call_bedrock_stream(bc: &aws_sdk_bedrockruntime::Client, c: BedrockCall) -> Result<String, anyhow::Error> {
+/// Add context and advice for specific error variants
+fn give_bedrock_hints(err: impl Into<aws_sdk_bedrockruntime::Error>) -> anyhow::Error {
+    let err = err.into();
+    let context = match &err {
+        aws_sdk_bedrockruntime::Error::AccessDeniedException(_err) => {
+            Some("hint: If you belive you have enabled this model, note that access MUST be enabled for a specific region!")
+        }
+        _ => None,
+    };
+    let mut anyhow_err: anyhow::Error = err.into();
+    if let Some(context) = context {
+        anyhow_err = anyhow_err.context(context);
+    }
+    anyhow_err = anyhow_err.context("failed to invoke bedrock");
+
+    anyhow_err
+}
+
+async fn call_bedrock_stream(
+    bc: &aws_sdk_bedrockruntime::Client,
+    c: BedrockCall,
+) -> Result<String, anyhow::Error> {
     let mut resp = bc
         .invoke_model_with_response_stream()
         .body(c.body)
@@ -516,7 +524,8 @@ async fn call_bedrock_stream(bc: &aws_sdk_bedrockruntime::Client, c: BedrockCall
         .accept(c.accept)
         .model_id(&c.model_id)
         .send()
-        .await?;
+        .await
+        .map_err(give_bedrock_hints)?;
 
     let mut output = String::new();
 

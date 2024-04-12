@@ -1,4 +1,3 @@
-use anyhow::Result;
 use aws_sdk_bedrockruntime::primitives::Blob;
 use serde::{Deserialize, Serialize};
 
@@ -43,11 +42,20 @@ impl CohereBody {
             stream,
         }
     }
+}
 
-    pub fn convert_to_blob(&self) -> Result<Blob> {
-        let blob_string = serde_json::to_vec(&self)?;
-        let body: Blob = Blob::new(blob_string);
-        Ok(body)
+pub(crate) trait Blobbable {
+    fn to_blob(&self) -> Blob;
+}
+
+impl<T> Blobbable for T
+where
+    T: Serialize,
+{
+    fn to_blob(&self) -> Blob {
+        let blob_string =
+            serde_json::to_vec(&self).expect("unserializable settings. this is a bug.");
+        Blob::new(blob_string)
     }
 }
 

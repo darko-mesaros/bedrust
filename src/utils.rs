@@ -1,8 +1,10 @@
 use anyhow::anyhow;
-use clap::Parser;
+use clap::{Parser, ValueEnum};
+use dialoguer::{theme::ColorfulTheme, FuzzySelect};
 use figlet_rs::FIGfont;
+use ron::ser::PrettyConfig;
 
-use std::{fs, path::PathBuf};
+use std::{fmt::Display, fs, path::PathBuf};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 use serde::{Deserialize, Serialize};
@@ -21,7 +23,7 @@ pub struct Args {
     pub init: bool,
 
     #[clap(value_enum)]
-    #[arg(short, long, required_unless_present("init"))]
+    #[arg(short, long)]
     pub model_id: Option<ArgModels>,
 
     #[arg(short, long)]
@@ -36,9 +38,10 @@ pub struct BedrustConfig {
     pub aws_profile: String,
     pub supported_images: Vec<String>,
     pub caption_prompt: String,
+    pub default_model: Option<ArgModels>,
 }
 
-#[derive(clap::ValueEnum, Clone)]
+#[derive(clap::ValueEnum, Clone, Serialize, Deserialize, Debug, Copy)]
 pub enum ArgModels {
     Llama270b,
     CohereCommand,
@@ -50,6 +53,12 @@ pub enum ArgModels {
     TitanTextExpressV1,
     Mixtral8x7bInstruct,
     Mistral7bInstruct,
+}
+
+impl Display for ArgModels {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_str())
+    }
 }
 
 impl ArgModels {
@@ -77,7 +86,7 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
     let figlet_path_str = figlet_font_file_path
         .as_path()
         .to_str()
-        .ok_or_else(||anyhow!("Was unable to parse Figlet font path to string"))?;
+        .ok_or_else(|| anyhow!("Was unable to parse Figlet font path to string"))?;
     let ansi_font = FIGfont::from_file(figlet_path_str).unwrap();
     let hello = ansi_font.convert(s);
 
@@ -86,10 +95,18 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
     println!("{}", hello.unwrap());
     stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
     println!("{}", "----------------------------------------".cyan());
-    println!("{}", "Currently supported chat commands: ".truecolor(83,82,82));
+    println!(
+        "{}",
+        "Currently supported chat commands: ".truecolor(83, 82, 82)
+    );
     println!("{}", "/q\t \t - Quit".truecolor(255, 229, 153));
     println!("{}", "----------------------------------------".cyan());
-    println!("{}{}{} 💬", "Now with ".italic(), "CHAT".red().on_yellow().blink(), " enabled!".italic());
+    println!(
+        "{}{}{} 💬",
+        "Now with ".italic(),
+        "CHAT".red().on_yellow().blink(),
+        " enabled!".italic()
+    );
 
     Ok(())
 }
@@ -118,53 +135,69 @@ pub fn check_for_config() -> Result<bool, anyhow::Error> {
 
     if !bedrust_config_file_path.exists() || !model_config_file_path.exists() {
         Ok(false)
-    } else { 
+    } else {
         Ok(true)
     }
+}
 
+pub fn prompt_for_model_selection() -> Result<ArgModels, anyhow::Error> {
+    let model_list = ArgModels::value_variants();
+    let idx = FuzzySelect::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select a model to use:")
+        .items(model_list)
+        .interact()?;
+    Ok(model_list[idx])
+}
+
+pub fn prompt_for_model_selection_opt() -> Result<Option<ArgModels>, anyhow::Error> {
+    let model_list = ArgModels::value_variants();
+    let idx = FuzzySelect::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select a default model to use press <enter> to skip")
+        .items(model_list)
+        .interact_opt()?;
+    Ok(idx.map(|idx|model_list[idx]))
 }
 
 // function that creates the configuration files during the `init` command
-pub fn initialize_config() -> Result<(), anyhow::Error>{
+pub fn initialize_config() -> Result<(), anyhow::Error> {
     let home_dir = home_dir().expect("Failed to get HOME directory");
     let config_dir = home_dir.join(format!(".config/{}", constants::CONFIG_DIR_NAME));
     fs::create_dir_all(&config_dir)?;
 
     let bedrust_config_file_path = config_dir.join(constants::BEDRUST_CONFIG_FILE_NAME);
     let bedrust_config_content = constants::BEDRUST_CONFIG_FILE.to_string();
-    fs::write(&bedrust_config_file_path, bedrust_config_content)?;
-    println!("⏳| Bedrust configuration file created at: {:?}", bedrust_config_file_path);
+
+    let mut default_config: BedrustConfig =
+        ron::de::from_str(&bedrust_config_content).expect("default config must be valid");
+    default_config.default_model = prompt_for_model_selection_opt()?;
+
+    fs::write(
+        &bedrust_config_file_path,
+        ron::ser::to_string_pretty(&default_config, PrettyConfig::new())?,
+    )?;
+    println!(
+        "⏳| Bedrust configuration file created at: {:?}",
+        bedrust_config_file_path
+    );
     println!("This file is used to store configuration items for the bedrust application.");
 
     let model_config_file_path = config_dir.join(constants::MODEL_CONFIG_FILE_NAME);
     let model_config_content = constants::MODEL_CONFIG_FILE.to_string();
     fs::write(&model_config_file_path, model_config_content)?;
-    println!("⏳| Model configuration file created at: {:?}", model_config_file_path);
+    println!(
+        "⏳| Model configuration file created at: {:?}",
+        model_config_file_path
+    );
     println!("This file is used to store default model parameters such as max tokens, temperature, top_p, top_k, etc.");
 
     let figlet_font_file_path = config_dir.join(constants::FIGLET_FONT_FILENAME);
     let figlet_font_content = constants::FIGLET_FONT;
     fs::write(&figlet_font_file_path, figlet_font_content)?;
     println!("⏳| Figlet font created at: {:?}", figlet_font_file_path);
-    println!("This file is used to as a font for `figlet` to create the nice big font during launch.");
+    println!(
+        "This file is used to as a font for `figlet` to create the nice big font during launch."
+    );
 
     println!("✅ | Bedrust configuration has been initialized in ~/.config/bedrust. You may now use it as normal.");
     Ok(())
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
