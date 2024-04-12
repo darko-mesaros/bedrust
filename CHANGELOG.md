@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - TODO: Ability to generate images
 - TODO: Better code testing
+- TODO: Handle longer pastes better
+
+## [0.7.2] - 2024-04-12
+### Added
+- Added the ability to pick any available model from a list when running bedrust if there is no default model configured or if you are running `--init`.
+
+### Changed
+- Quality of life improvements, and code cleanup
+- Better handling of AWS SDK errors
 
 ## [0.7.1] - 2024-03-31
 ### Changed

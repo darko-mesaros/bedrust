@@ -143,7 +143,7 @@ pub fn check_for_config() -> Result<bool, anyhow::Error> {
 pub fn prompt_for_model_selection() -> Result<ArgModels, anyhow::Error> {
     let model_list = ArgModels::value_variants();
     let idx = FuzzySelect::with_theme(&ColorfulTheme::default())
-        .with_prompt("Select a default model to use or <enter> to skip")
+        .with_prompt("Select a model to use:")
         .items(model_list)
         .interact()?;
     Ok(model_list[idx])
@@ -152,7 +152,7 @@ pub fn prompt_for_model_selection() -> Result<ArgModels, anyhow::Error> {
 pub fn prompt_for_model_selection_opt() -> Result<Option<ArgModels>, anyhow::Error> {
     let model_list = ArgModels::value_variants();
     let idx = FuzzySelect::with_theme(&ColorfulTheme::default())
-        .with_prompt("Select a default model to use or <enter> to skip")
+        .with_prompt("Select a default model to use press <enter> to skip")
         .items(model_list)
         .interact_opt()?;
     Ok(idx.map(|idx|model_list[idx]))

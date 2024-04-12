@@ -1,9 +1,9 @@
 [package]
 name = "bedrust"
 description = "A command line tool to invoke and work with Large Language models on AWS, using Amazon Bedrock"
-version = "0.7.1"
+version = "0.7.2"
 edition = "2021"
-authors = ["Darko Mesaros <d@rko.rs>"]
+authors = ["Darko Mesaros <d@rko.rs>", "Stephen Barr <stephen.barr@devfactory.com>", "Russel Cohen <rcoh@rcoh.me>"]
 license = "MIT OR Apache-2.0"
 keywords = ["aws", "generative-ai", "bedrock", "chatbot"]
 categories = ["command-line-utilities", "generative-ai"]

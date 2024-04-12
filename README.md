@@ -73,14 +73,15 @@ Let's initialize the configuration. Because **bedrust** uses two configuration f
 ```
 bedrust --init
 ```
-This will create all the necessary files for you to be able to use **bedrust**. There is no need to modify these files, unless you want to.
+You will get asked to pick a default model. And this will create all the necessary files for you to be able to use **bedrust**. There is no need to modify these files, unless you want to.
 
 ### Running the application 🚀
 
-Finally, to run the application just use the following `cargo` command:
+Finally, to run the application just use the following command:
 ```bash
 bedrust -m <MODELNAME> # replacing the model name with one of the supported ones
 ```
+Or if you wish to use the default model (the one defined during `--init` / in your config file) just run `bedrust` without any parameters. If you do not select a model by passing the `-m` parameter, AND you do not have a default model set in your config file, you will be prompted to pick one during the run.
 
 ## Usage
 ```bash
@@ -149,3 +150,4 @@ They *need* to be in your `$HOME/.config/bedrust/` directory. The application wi
 - [ ] Code Testing
 - [ ] Ability to generate images
 - [x] Make it prettier
+- [ ] Handle long pastes better
