@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Updated the `bedrust_config.ron` file with some comments
+- Updated the package versions
 
 ## [0.7.2] - 2024-04-12
 ### Added
