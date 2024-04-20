@@ -78,9 +78,13 @@ pub static MODEL_CONFIG_FILE: &str = r#"ModelConfigs(
 
 // UPDATED: 2024-03-30
 pub static BEDRUST_CONFIG_FILE: &str = r#"BedrustConfig(
+  // define what AWS profile to use
   aws_profile: "default",
+  // what image extensions do you wish to support when running captioning
   supported_images: ["jpg", "jpeg", "png", "bmp",],
+  // the prompt being used for image captioning
   caption_prompt: "Please caption the following image for the sake of accessibility. Return just the caption, and nothing else. Keep it clean, and under 100 words.",
+  // choose to show the big ASCII banner on startup or not
   show_banner: true
 )
 "#;
