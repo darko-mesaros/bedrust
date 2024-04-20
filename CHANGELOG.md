@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO: Better code testing
 - TODO: Handle longer pastes better
 
+## [0.7.3] - 2024-04-20
+### Added
+- Added support for the Mistral Large model
+- Special command to clear current chat history
+- Added configuration option to hide the ASCII banner
+
+### Changed
+- Updated the `bedrust_config.ron` file with some comments
+- Updated the package versions
+
 ## [0.7.2] - 2024-04-12
 ### Added
 - Added the ability to pick any available model from a list when running bedrust if there is no default model configured or if you are running `--init`.

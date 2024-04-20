@@ -5,7 +5,7 @@ pub static CONFIG_DIR_NAME: &str = "bedrust";
 pub static MODEL_CONFIG_FILE_NAME: &str = "model_config.ron";
 pub static BEDRUST_CONFIG_FILE_NAME: &str = "bedrust_config.ron";
 
-// UPDATED: 2024-03-30
+// UPDATED: 2024-04-20
 pub static MODEL_CONFIG_FILE: &str = r#"ModelConfigs(
   llama270b: (
     temperature: 1, 
@@ -65,15 +65,27 @@ pub static MODEL_CONFIG_FILE: &str = r#"ModelConfigs(
       top_k: 200,
       max_tokens: 1024,
       stop: [],
+  ),
+  mistral_large:(
+      temperature: 0.5,
+      top_p: 0.9,
+      top_k: 200,
+      max_tokens: 1024,
+      stop: [],
   )
 )
 "#;
 
 // UPDATED: 2024-03-30
 pub static BEDRUST_CONFIG_FILE: &str = r#"BedrustConfig(
+  // define what AWS profile to use
   aws_profile: "default",
+  // what image extensions do you wish to support when running captioning
   supported_images: ["jpg", "jpeg", "png", "bmp",],
-  caption_prompt: "Please caption the following image for the sake of accessibility. Return just the caption, and nothing else. Keep it clean, and under 100 words."
+  // the prompt being used for image captioning
+  caption_prompt: "Please caption the following image for the sake of accessibility. Return just the caption, and nothing else. Keep it clean, and under 100 words.",
+  // choose to show the big ASCII banner on startup or not
+  show_banner: true
 )
 "#;
 // FIGLET FONT

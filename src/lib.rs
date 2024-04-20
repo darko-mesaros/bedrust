@@ -338,6 +338,21 @@ fn convert_question_to_model_options(
                 body: mixtral_body,
             })
         }
+        "mistral.mistral-large-2402-v1:0" => {
+            let d = model_defaults.mistral_7b_instruct;
+            let mixtral_body = Mistral7Body::new(
+                question.ok_or_else(|| anyhow!("There was no question passed to Mistral Large"))?,
+                d.temperature,
+                d.top_p,
+                d.top_k,
+                d.max_tokens,
+                d.stop,
+            );
+            Ok(ModelOptions::Mistral7b {
+                model_id: String::from("mistral.mistral-large-2402-v1:0"),
+                body: mixtral_body,
+            })
+        }
         &_ => todo!(),
     }
 }
@@ -456,7 +471,7 @@ fn process_response(
                 serde_json::from_slice::<TitanTextV1Results>(payload_bytes)
                     .map(|res| res.output_text)
             }
-            "mistral.mixtral-8x7b-instruct-v0:1" | "mistral.mistral-7b-instruct-v0:2" => {
+            "mistral.mixtral-8x7b-instruct-v0:1" | "mistral.mistral-7b-instruct-v0:2" | "mistral.mistral-large-2402-v1:0" => {
                 serde_json::from_slice::<Mistral7Results>(payload_bytes)
                     .map(|res| res.outputs[0].text.clone())
             }
