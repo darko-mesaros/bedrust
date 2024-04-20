@@ -101,7 +101,8 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
         "{}",
         "Currently supported chat commands: ".truecolor(83, 82, 82)
     );
-    println!("{}", "/q\t \t - Quit".truecolor(255, 229, 153));
+    println!("{}", "/c\t - Clear currennt chat history".truecolor(255, 229, 153));
+    println!("{}", "/q\t - Quit".truecolor(255, 229, 153));
     println!("{}", "----------------------------------------".cyan());
     println!(
         "{}{}{} 💬",

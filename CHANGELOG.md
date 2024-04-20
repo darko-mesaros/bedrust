@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.3] - 2024-04-20
 ### Added
 - Added support for the Mistral Large model
+- Special command to clear current chat history
 
 ## [0.7.2] - 2024-04-12
 ### Added

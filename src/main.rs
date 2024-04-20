@@ -155,10 +155,15 @@ async fn main() -> Result<()> {
             if question == "/q" {
                 println!("Bye!");
                 break;
+            } else if question == "/c" {
+                println!("Clearing current chat history");
+                conversation_history.clear();
+                continue;
             } else if question.starts_with('/') {
                 utils::print_warning("Special command detected: /");
                 utils::print_warning("----------------------------------------");
                 utils::print_warning("Currently supported chat commands: ");
+                utils::print_warning("/c\t \t - Clear current chat history");
                 utils::print_warning("/q\t \t - Quit");
                 continue;
             }
