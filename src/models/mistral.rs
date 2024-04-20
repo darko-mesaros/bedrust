@@ -16,6 +16,14 @@ pub struct Mistral7bInstruct {
     pub max_tokens: i32,
     pub stop: Vec<String>,
 }
+#[derive(Debug, Deserialize, Serialize)]
+pub struct MistralLarge {
+    pub temperature: f32,
+    pub top_p: f32,
+    pub top_k: i32,
+    pub max_tokens: i32,
+    pub stop: Vec<String>,
+}
 
 #[derive(serde::Serialize, Debug)]
 pub struct Mistral7Body {

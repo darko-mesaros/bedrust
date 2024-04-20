@@ -5,7 +5,7 @@ pub static CONFIG_DIR_NAME: &str = "bedrust";
 pub static MODEL_CONFIG_FILE_NAME: &str = "model_config.ron";
 pub static BEDRUST_CONFIG_FILE_NAME: &str = "bedrust_config.ron";
 
-// UPDATED: 2024-03-30
+// UPDATED: 2024-04-20
 pub static MODEL_CONFIG_FILE: &str = r#"ModelConfigs(
   llama270b: (
     temperature: 1, 
@@ -60,6 +60,13 @@ pub static MODEL_CONFIG_FILE: &str = r#"ModelConfigs(
       stop: [],
   ),
   mistral_7b_instruct:(
+      temperature: 0.5,
+      top_p: 0.9,
+      top_k: 200,
+      max_tokens: 1024,
+      stop: [],
+  ),
+  mistral_large:(
       temperature: 0.5,
       top_p: 0.9,
       top_k: 200,

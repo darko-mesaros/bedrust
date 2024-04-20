@@ -53,6 +53,7 @@ pub enum ArgModels {
     TitanTextExpressV1,
     Mixtral8x7bInstruct,
     Mistral7bInstruct,
+    MistralLarge,
 }
 
 impl Display for ArgModels {
@@ -74,6 +75,7 @@ impl ArgModels {
             ArgModels::TitanTextExpressV1 => "amazon.titan-text-express-v1",
             ArgModels::Mixtral8x7bInstruct => "mistral.mixtral-8x7b-instruct-v0:1",
             ArgModels::Mistral7bInstruct => "mistral.mistral-7b-instruct-v0:2",
+            ArgModels::MistralLarge => "mistral.mistral-large-2402-v1:0",
         }
     }
 }

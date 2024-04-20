@@ -11,7 +11,7 @@ use claudev3::ClaudeV3Config;
 use cohere::CohereCommandConfig;
 use jurrasic2::Jurrasic2UltraConfig;
 use llama2::Llama270bConfig;
-use mistral::{Mistral7bInstruct, Mixtral8x7bInstruct};
+use mistral::{Mistral7bInstruct, Mixtral8x7bInstruct, MistralLarge};
 use titan::TitanTextExpressV1Config;
 
 use anyhow::{anyhow, Result};
@@ -35,6 +35,7 @@ pub struct ModelConfigs {
     pub titan_text_express_v1: TitanTextExpressV1Config,
     pub mixtral_8x7b_instruct: Mixtral8x7bInstruct,
     pub mistral_7b_instruct: Mistral7bInstruct,
+    pub mistral_large: MistralLarge,
 }
 
 pub fn load_model_config() -> Result<ModelConfigs> {
