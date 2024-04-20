@@ -39,6 +39,10 @@ pub struct BedrustConfig {
     pub supported_images: Vec<String>,
     pub caption_prompt: String,
     pub default_model: Option<ArgModels>,
+    // FIX: Implement a better way for configuration defaults
+    // for now if there is no configuration line use true
+    #[serde(default="_default_true")]
+    pub show_banner: bool,
 }
 
 #[derive(clap::ValueEnum, Clone, Serialize, Deserialize, Debug, Copy)]
@@ -80,21 +84,29 @@ impl ArgModels {
     }
 }
 // ######################################## END ARGUMENT PARSING
+// ######################################## CONST FUNCTIONS
+// Used to set default values to struct fields during serialization
+const fn _default_true() -> bool { true }
+// ######################################## END CONST FUNCTIONS
 
 pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
     let home_dir = home_dir().expect("Failed to get HOME directory");
     let config_dir = home_dir.join(format!(".config/{}", constants::CONFIG_DIR_NAME));
-    let figlet_font_file_path = config_dir.join(constants::FIGLET_FONT_FILENAME);
-    let figlet_path_str = figlet_font_file_path
-        .as_path()
-        .to_str()
-        .ok_or_else(|| anyhow!("Was unable to parse Figlet font path to string"))?;
-    let ansi_font = FIGfont::from_file(figlet_path_str).unwrap();
-    let hello = ansi_font.convert(s);
-
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
-    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(255, 153, 0))))?;
-    println!("{}", hello.unwrap());
+
+    // test if show_banner is true
+    if load_bedrust_config()?.show_banner {
+        let figlet_font_file_path = config_dir.join(constants::FIGLET_FONT_FILENAME);
+        let figlet_path_str = figlet_font_file_path
+            .as_path()
+            .to_str()
+            .ok_or_else(|| anyhow!("Was unable to parse Figlet font path to string"))?;
+        let ansi_font = FIGfont::from_file(figlet_path_str).unwrap();
+        let hello = ansi_font.convert(s);
+
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(255, 153, 0))))?;
+        println!("{}", hello.unwrap());
+    } // if its false - just continue
     stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
     println!("{}", "----------------------------------------".cyan());
     println!(

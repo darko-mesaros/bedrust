@@ -80,7 +80,8 @@ pub static MODEL_CONFIG_FILE: &str = r#"ModelConfigs(
 pub static BEDRUST_CONFIG_FILE: &str = r#"BedrustConfig(
   aws_profile: "default",
   supported_images: ["jpg", "jpeg", "png", "bmp",],
-  caption_prompt: "Please caption the following image for the sake of accessibility. Return just the caption, and nothing else. Keep it clean, and under 100 words."
+  caption_prompt: "Please caption the following image for the sake of accessibility. Return just the caption, and nothing else. Keep it clean, and under 100 words.",
+  show_banner: true
 )
 "#;
 // FIGLET FONT

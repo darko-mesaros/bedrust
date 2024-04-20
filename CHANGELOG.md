@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added support for the Mistral Large model
 - Special command to clear current chat history
+- Added configuration option to hide the ASCII banner
 
 ## [0.7.2] - 2024-04-12
 ### Added
