@@ -49,7 +49,7 @@ pub async fn configure_aws(fallback_region: String, profile_name: String) -> aws
 
     
     let provider = CredentialsProviderChain::first_try("Environment", EnvironmentVariableCredentialsProvider::new())
-        .or_else(profile_name, ProfileFileCredentialsProvider::builder().build());
+        .or_else("Profile", ProfileFileCredentialsProvider::builder().profile_name(profile_name).build());
 
     aws_config::from_env()
         .credentials_provider(provider)
