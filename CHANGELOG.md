@@ -11,8 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO: Better code testing
 - TODO: Handle longer pastes better
 
-## [0.7.3] - 2024-04-20
+## [0.7.4] - 2024-05-06
+### Changed
+- Fixed the credential provider chain issue. Now it will try a few credential providers, before giving up.
+
+### Thanks
+- Thanks to kaumnen and electric__universe on Twitch <3 
+
 ### Added
+## [0.7.3] - 2024-04-20
 - Added support for the Mistral Large model
 - Special command to clear current chat history
 - Added configuration option to hide the ASCII banner

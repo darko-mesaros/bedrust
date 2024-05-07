@@ -7,6 +7,10 @@ use anyhow::anyhow;
 use aws_config::meta::region::RegionProviderChain;
 use aws_config::BehaviorVersion;
 use aws_types::region::Region;
+use aws_config::meta::credentials::CredentialsProviderChain;
+use aws_config::environment::credentials::EnvironmentVariableCredentialsProvider;
+use aws_config::profile::ProfileFileCredentialsProvider;
+
 use core::panic;
 use models::cohere::Blobbable;
 use serde::ser::Error;
@@ -43,16 +47,20 @@ pub async fn configure_aws(fallback_region: String, profile_name: String) -> aws
             .or_default_provider()
             .or_else(Region::new(fallback_region));
 
+    
+    // NOTE: This checks, ENV first, then profile, then it falls back to the whatever the default
+    // is
+    let provider = CredentialsProviderChain::first_try("Environment", EnvironmentVariableCredentialsProvider::new())
+        .or_else("Profile", ProfileFileCredentialsProvider::builder().profile_name(profile_name).build())
+        .or_default_provider().await;
+
     aws_config::defaults(BehaviorVersion::latest())
-        .credentials_provider(
-            aws_config::profile::ProfileFileCredentialsProvider::builder()
-                .profile_name(profile_name)
-                .build(),
-        )
+        .credentials_provider(provider)
         .region(region_provider)
         .load()
         .await
 }
+
 //======================================== END AWS
 
 #[derive(Debug)]
