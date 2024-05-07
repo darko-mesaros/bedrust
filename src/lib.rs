@@ -48,22 +48,17 @@ pub async fn configure_aws(fallback_region: String, profile_name: String) -> aws
             .or_else(Region::new(fallback_region));
 
     
+    // NOTE: This checks, ENV first, then profile, then it falls back to the whatever the default
+    // is
     let provider = CredentialsProviderChain::first_try("Environment", EnvironmentVariableCredentialsProvider::new())
         .or_else("Profile", ProfileFileCredentialsProvider::builder().profile_name(profile_name).build())
         .or_default_provider().await;
 
-    // aws_config::from_env()
     aws_config::defaults(BehaviorVersion::latest())
         .credentials_provider(provider)
         .region(region_provider)
         .load()
         .await
-
-    // aws_config::defaults(BehaviorVersion::latest())
-    //     .credentials_provider(get_profile_creds(profile_name))
-    //     .region(region_provider)
-    //     .load()
-    //     .await
 }
 
 //======================================== END AWS
