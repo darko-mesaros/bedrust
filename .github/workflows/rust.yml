@@ -33,15 +33,9 @@ jobs:
     - name: Package Release
       run: zip -j release.zip target/release/bedrust
     - name: Create release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: ncipollo/release-action@v1
       with:
-          #tag_name: ${{ github.ref }}
-        tag_name: v0.7.4
-        release_name: Release v0.7.4
-        draft: false
-        prerelease: false
+        artifacts: "release.zip"
     - name: Upload release asset
       id: upload-release-asset
       uses: actions/upload-release-asset@v1
