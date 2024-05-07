@@ -150,4 +150,5 @@ They *need* to be in your `$HOME/.config/bedrust/` directory. The application wi
 - [ ] Code Testing
 - [ ] Ability to generate images
 - [x] Make it prettier
-- [ ] Handle long pastes better
+- [ ] Handle long pastes Better
+- [x] Bedder credential handling
