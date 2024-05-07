@@ -2,9 +2,11 @@ name: Rust
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags:
+    - 'v*' # Trigger the workflow on new tags starting with 'v'
+    branches:
+      - main
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -28,6 +30,8 @@ jobs:
     - name: Build release
       run: cargo build --release --verbose
       id: create_release
+    - name: Package Release
+      run: zip -j release.zip target/release/bedrust
     - name: Create release
       uses: actions/create-release@v1
       env:
@@ -45,6 +49,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./target/release/bedrust
-        asset_name: bedrust
-        asset_content_type: application/octet-stream
+        asset_path: ./release.zip
+        asset_name: bedrust.zip
+        asset_content_type: application/zip
