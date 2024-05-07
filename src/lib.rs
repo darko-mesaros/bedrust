@@ -52,7 +52,8 @@ pub async fn configure_aws(fallback_region: String, profile_name: String) -> aws
         .or_else("Profile", ProfileFileCredentialsProvider::builder().profile_name(profile_name).build())
         .or_default_provider().await;
 
-    aws_config::from_env()
+    // aws_config::from_env()
+    aws_config::defaults(BehaviorVersion::latest())
         .credentials_provider(provider)
         .region(region_provider)
         .load()
