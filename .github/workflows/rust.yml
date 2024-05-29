@@ -31,23 +31,23 @@ jobs:
     - name: Create release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "release_aarch64-apple-darwin.zip"
+        artifacts: "dist/release_aarch64-apple-darwin.zip"
 
 
-  release_x86:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build release
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        . "$HOME/.cargo/env"
-        cargo build --release --verbose
-      id: create_release
-    - name: Package Release
-      run: zip -j release_x86_Linux.zip target/release/bedrust
-    - name: Create release
-      uses: ncipollo/release-action@v1
-      with:
-        artifacts: "release_x86_Linux.zip"
+  # release_x86:
+  #   runs-on: ubuntu-latest
+  #
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - name: Build release
+  #     run: |
+  #       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  #       . "$HOME/.cargo/env"
+  #       cargo build --release --verbose
+  #     id: create_release
+  #   - name: Package Release
+  #     run: zip -j release_x86_Linux.zip target/release/bedrust
+  #   - name: Create release
+  #     uses: ncipollo/release-action@v1
+  #     with:
+  #       artifacts: "release_x86_Linux.zip"
