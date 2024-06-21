@@ -29,6 +29,9 @@ pub struct Args {
     #[arg(short, long)]
     pub caption: Option<PathBuf>,
 
+    #[arg(short, long)]
+    pub source: Option<PathBuf>,
+
     #[arg(short)]
     pub xml: bool,
 }

@@ -18,6 +18,9 @@ use bedrust::captioner::OutputFormat;
 use bedrust::utils::{check_for_config, initialize_config, print_warning};
 use clap::Parser;
 
+use bedrust::code::code_chat;
+use bedrust::constants;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // parsing arguments
@@ -135,8 +138,25 @@ async fn main() -> Result<()> {
     } else {
         // default run
         utils::hello_header("Bedrust")?;
-        // STORE HISTORY:
-        let mut conversation_history = String::new();
+
+        // TEST - SOURCE READING
+        let mut conversation_history =  if arguments.source.is_some() {
+            let mut convo = String::new();
+            convo.push_str(constants::CODE_CHAT_PROMPT);
+
+            let code = code_chat(arguments.source.clone().unwrap(), &bedrock_runtime_client).await?;
+            convo.push_str(code.as_str());
+
+            println!("----------------------------------------");
+            println!("💾 | Ooh it Seems we are talkinga about code today!");
+            println!("💾 | I have this dir to review: {:?}!", &arguments.source.unwrap().into_os_string());
+            // Return this conversation
+            convo
+        } else {
+            // STORE HISTORY:
+            String::new()
+        };
+
         // get user input
         loop {
             println!("----------------------------------------");

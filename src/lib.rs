@@ -2,6 +2,7 @@ pub mod captioner;
 pub mod constants;
 pub mod models;
 pub mod utils;
+pub mod code;
 
 use anyhow::anyhow;
 use aws_config::meta::region::RegionProviderChain;
