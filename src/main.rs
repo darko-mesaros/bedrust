@@ -74,7 +74,7 @@ async fn main() -> Result<()> {
     let bedrust_config = utils::load_bedrust_config()?;
 
     // configuring the SDK
-    let config = configure_aws(String::from("us-west-2"), bedrust_config.aws_profile).await;
+    let config = configure_aws(String::from("us-east-1"), bedrust_config.aws_profile).await;
     // setup the bedrock-runtime client
     let bedrock_runtime_client = aws_sdk_bedrockruntime::Client::new(&config);
     // setup the bedrock client
