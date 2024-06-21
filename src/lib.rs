@@ -5,7 +5,9 @@ pub mod utils;
 pub mod code;
 
 use anyhow::anyhow;
+use aws_config::imds::credentials::ImdsCredentialsProvider;
 use aws_config::meta::region::RegionProviderChain;
+use aws_config::profile::ProfileFileRegionProvider;
 use aws_config::BehaviorVersion;
 use aws_types::region::Region;
 use aws_config::meta::credentials::CredentialsProviderChain;
@@ -18,7 +20,7 @@ use serde::ser::Error;
 use serde::Deserialize;
 use serde_json::Value;
 
-use std::{env, io};
+use std::io;
 
 use anyhow::Result;
 
@@ -41,23 +43,31 @@ use std::io::Write;
 use crate::captioner::Image;
 
 //======================================== AWS_REGION
-// FIX: Make sure it can use the region defined in the currently selected profile
+// FIX: Return Result
 pub async fn configure_aws(fallback_region: String, profile_name: String) -> aws_config::SdkConfig {
-    let region_provider =
-        // NOTE: this is different than the default Rust SDK behavior which checks AWS_REGION first. Is this intentional?
-        RegionProviderChain::first_try(env::var("AWS_DEFAULT_REGION").ok().map(Region::new))
-            .or_default_provider()
-            .or_else(Region::new(fallback_region));
-
+    let region_provider = RegionProviderChain::first_try(
+        ProfileFileRegionProvider::builder()
+        .profile_name(&profile_name)
+        .build()
+    )
+        .or_else(aws_config::environment::EnvironmentVariableRegionProvider::new())
+        .or_else(aws_config::imds::region::ImdsRegionProvider::builder().build())
+        .or_else(Region::new(fallback_region));
     
-    // NOTE: This checks, ENV first, then profile, then it falls back to the whatever the default
-    // is
-    let provider = CredentialsProviderChain::first_try("Environment", EnvironmentVariableCredentialsProvider::new())
-        .or_else("Profile", ProfileFileCredentialsProvider::builder().profile_name(profile_name).build())
-        .or_default_provider().await;
+    let credentials_provider = CredentialsProviderChain::first_try(
+        "Environment",
+        EnvironmentVariableCredentialsProvider::new()
+        )
+        .or_else(
+            "Profile", 
+            ProfileFileCredentialsProvider::builder()
+            .profile_name(profile_name)
+            .build()
+            )
+        .or_else("IMDS", ImdsCredentialsProvider::builder().build());
 
     aws_config::defaults(BehaviorVersion::latest())
-        .credentials_provider(provider)
+        .credentials_provider(credentials_provider)
         .region(region_provider)
         .load()
         .await
