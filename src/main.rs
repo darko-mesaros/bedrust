@@ -139,20 +139,20 @@ async fn main() -> Result<()> {
         // default run
         utils::hello_header("Bedrust")?;
 
-        // TEST - SOURCE READING
+        // BETA: SOURCE READING
         let mut conversation_history =  if arguments.source.is_some() {
+            println!("----------------------------------------");
+            println!("💾 | Ooh it Seems we are talkinga about code today!");
+            println!("💾 | I have this dir to review: {:?}!", arguments.source.clone().unwrap().into_os_string());
             let mut convo = String::new();
             convo.push_str(constants::CODE_CHAT_PROMPT);
 
             let code = code_chat(arguments.source.clone().unwrap(), &bedrock_runtime_client).await?;
             convo.push_str(code.as_str());
 
-            println!("----------------------------------------");
-            println!("💾 | Ooh it Seems we are talkinga about code today!");
-            println!("💾 | I have this dir to review: {:?}!", &arguments.source.unwrap().into_os_string());
             // Return this conversation
             convo
-        } else {
+        } else { // We are not looking at code
             // STORE HISTORY:
             String::new()
         };

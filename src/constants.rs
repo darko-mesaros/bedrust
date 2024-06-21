@@ -10,7 +10,7 @@ Please prepare to analyze the provided code, keeping in mind the following objec
 1. **Code Review**: Identify any potential issues, bugs, or inefficiencies in the code. Be ready to suggest improvements or optimizations where necessary.
 2. **Functionality Explanation**: Be prepared to explain the functionality of the code. What does each file or significant section of the code do?
 3. **Best Practices**: Evaluate whether the code follows best practices in terms of style, structure, and design patterns. Be ready to recommend any changes that could enhance the code quality.
-4. **Specific Questions**: I will have specific questions related to certain parts of the code. Please be prepared to provide detailed answers and examples if needed.
+4. **Specific Questions**: I will have specific questions related to certain parts of the code. Please be prepared to provide detailed answers and examples if needed. Those questions will come after you have been provided the files.
 
 Here are the files:
 "#;
@@ -27,7 +27,54 @@ Give me an array of important files for a project type that has the following di
 
 // HELPER CONSTANTS
 pub static PROJECT_GUESS_MODEL_ID: &str = "anthropic.claude-3-sonnet-20240229-v1:0";
-pub static CODE_IGNORE_DIRS: &[&str] = &["node_modules", "target"];
+pub static CODE_IGNORE_DIRS: &[&str] = &[
+        // Rust
+        "target",
+
+        // JavaScript/TypeScript
+        "node_modules",
+        "dist",
+        "build",
+
+        // Python
+        "__pycache__",
+        ".tox",
+        "venv",
+        ".pytest_cache",
+
+        // Java
+        "target",
+        "bin",
+        ".gradle",
+        ".mvn",
+
+        // C/C++
+        "obj",
+        "out",
+
+        // Go
+        "pkg",
+
+        // Ruby
+        ".bundle",
+        "vendor/bundle",
+
+        // Django
+        "staticfiles",
+        "media",
+
+        // General
+        ".git",
+        ".svn",
+        ".hg",
+        ".idea",
+        ".vscode",
+        ".DS_Store",
+        "logs",
+        "tmp",
+        "cache",
+        ".terraform",
+    ];
 
 // CONFIGURATION FILES
 pub static CONFIG_DIR_NAME: &str = "bedrust";

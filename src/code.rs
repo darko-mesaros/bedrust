@@ -6,19 +6,24 @@ use crate::RunType;
 use crate::mk_bedrock_call;
 use crate::call_bedrock;
 
+// NOTE:
+// A few things to note here:
+// - I am hardcoding the model that guesses the project type, meaning the customer will need to
+// have that model enabled for this to work.
+// - For larger projects we may reach the context size limit quite fast. So it is rather limited.
+// - We need to provide to bits of information before the run commences:
+//   - Size of the files that will be sent over
+//   - Project type we assumed / file extensions being sent over
+
 pub async fn code_chat(p: PathBuf, client: &aws_sdk_bedrockruntime::Client ) -> Result<String, anyhow::Error> {
     // FIGURE OUT PROJECT
     // FIX: Seems to return hidden files too
     let all_files = get_all_files(&p, None, 2)?;
-    println!("{:#?}", all_files);
     let extn = guess_code_type(all_files, client).await?;
-    println!("EXTN: {:#?}", extn);
     
-    //let ext = vec!["rs", "md", "toml", "ron"];
     // get all files with the extensions from above, and go 2 levels deep
     let files = get_all_files(&p, Some(extn), 2)?;
     let contents = get_file_contents(files)?;
-    // println!("CONTENTS: {:#?}", contents);
 
     let mut formatted_contents = String::new();
     for (filename, content) in &contents {
@@ -40,7 +45,7 @@ fn is_hidden(entry: &DirEntry) -> bool {
 }
 
 // Function to check if the file has one of the desired extensions
-fn has_desired_extension(entry: &DirEntry, extensions: &Vec<String>) -> bool {
+fn has_desired_extension(entry: &DirEntry, extensions: &[String]) -> bool {
     entry.file_type().is_file() && entry.path().extension()
         .and_then(|ext| ext.to_str())
         .map(|ext| extensions.contains(&ext.into()))
@@ -87,12 +92,11 @@ async fn guess_code_type(files: Vec<PathBuf>, client: &aws_sdk_bedrockruntime::C
         query.push_str(file.into_os_string().to_str().unwrap());
     }
 
-    // model_id
     let model_id = constants::PROJECT_GUESS_MODEL_ID;
-    // client
-    // run_type?
     let bcall = mk_bedrock_call(&query, None, model_id)?;
-    // FIX: This just prints out the files
+    // FIX: This just prints out the files - as this is how the call_bedrock function works
+    // This println! is here to just make it look nice
+    println!("Including the following file extensions in this run: ");
     let response = call_bedrock(client, bcall, RunType::Standard).await?;
     let extensions: Vec<String> = serde_json::from_str(&response)?;
 
