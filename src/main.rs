@@ -142,18 +142,23 @@ async fn main() -> Result<()> {
         // BETA: SOURCE READING
         let mut conversation_history =  if arguments.source.is_some() {
             println!("----------------------------------------");
-            println!("💾 | Ooh it Seems we are talkinga about code today!");
-            println!("💾 | I have this dir to review: {:?}!", arguments.source.clone().unwrap().into_os_string());
+            print_warning("⚠ THIS IS A BETA FEATURE ⚠");
+            println!("----------------------------------------");
+            println!("💾 | Ooh, it Seems we are talking about code today!");
+            println!("💾 | I was given this dir to review: {:?}", arguments.source.clone().unwrap().into_os_string());
+            println!("----------------------------------------");
             let mut convo = String::new();
             convo.push_str(constants::CODE_CHAT_PROMPT);
 
             let code = code_chat(arguments.source.clone().unwrap(), &bedrock_runtime_client).await?;
-            convo.push_str(code.as_str());
+            println!("----------------------------------------");
+            print_warning("⚠ THIS IS A BETA FEATURE ⚠");
 
             // Return this conversation
+            convo.push_str(code.as_str());
             convo
         } else { // We are not looking at code
-            // STORE HISTORY:
+            // Just return an empty string
             String::new()
         };
 

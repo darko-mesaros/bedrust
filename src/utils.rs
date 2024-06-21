@@ -119,12 +119,16 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
     println!("{}", "/c\t - Clear current chat history".truecolor(255, 229, 153));
     println!("{}", "/q\t - Quit".truecolor(255, 229, 153));
     println!("{}", "----------------------------------------".cyan());
-    println!(
-        "{}{}{} 💬",
-        "Now with ".italic(),
-        "CHAT".red().on_yellow().blink(),
-        " enabled!".italic()
-    );
+    println!();
+    // NOTE: This println! statement is used to advertise new features
+    // (This could probably be a nicer function)
+    // Removed the CHAT enabled notification
+    // println!(
+    //     "{}{}{} 💬",
+    //     "Now with ".italic(),
+    //     "CHAT".red().on_yellow().blink(),
+    //     " enabled!".italic()
+    // );
 
     Ok(())
 }
