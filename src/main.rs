@@ -106,6 +106,7 @@ async fn main() -> Result<()> {
             images.push(Image::new(file)?);
         }
 
+        // TODO: Broken when used with Claude 3.5
         caption_image(
             &mut images,
             model_id,

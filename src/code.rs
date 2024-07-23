@@ -1,5 +1,6 @@
 use std::{collections::HashMap, path::PathBuf};
 use std::fs;
+use anyhow::anyhow;
 use walkdir::{WalkDir, DirEntry};
 use crate::constants;
 use crate::RunType;
@@ -18,11 +19,11 @@ use crate::call_bedrock;
 pub async fn code_chat(p: PathBuf, client: &aws_sdk_bedrockruntime::Client ) -> Result<String, anyhow::Error> {
     // FIGURE OUT PROJECT
     // FIX: Seems to return hidden files too
-    let all_files = get_all_files(&p, None, 2)?;
+    let all_files = get_all_files(&p, None, 3)?;
     let extn = guess_code_type(all_files, client).await?;
     
     // get all files with the extensions from above, and go 2 levels deep
-    let files = get_all_files(&p, Some(extn), 2)?;
+    let files = get_all_files(&p, Some(extn), 3)?;
     let contents = get_file_contents(files)?;
 
     let mut formatted_contents = String::new();
@@ -61,6 +62,9 @@ fn is_not_ignored(entry: &DirEntry) -> bool {
 
 // gets all files of a give filename in a given dir up to a certain depth
 fn get_all_files(p: &PathBuf, ext: Option<Vec<String>>, l: u8) -> Result<Vec<PathBuf>, anyhow::Error> {
+    if !p.exists() {
+        return Err(anyhow!("🔴 | The specified path does not exist. Sorry!"));
+    }
 
     let files: Vec<_> = WalkDir::new(p)
         .max_depth(l.into())
@@ -99,6 +103,8 @@ async fn guess_code_type(files: Vec<PathBuf>, client: &aws_sdk_bedrockruntime::C
     println!("Including the following file extensions in this run: ");
     let response = call_bedrock(client, bcall, RunType::Standard).await?;
     let extensions: Vec<String> = serde_json::from_str(&response)?;
+    // TODO: Have the ability to parse the response if its not an array - give it a chance to
+    // "THINK"
 
     Ok(extensions)
 }

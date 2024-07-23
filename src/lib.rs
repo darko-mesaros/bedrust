@@ -440,6 +440,7 @@ pub async fn ask_bedrock(
                 // TODO: Programmaticall check for multimodality of FMs
                 if model_id != "anthropic.claude-3-sonnet-20240229-v1:0"
                     && model_id != "anthropic.claude-3-haiku-20240307-v1:0"
+                    && model_id != "anthropic.claude-3-5-sonnet-20240620-v1:0"
                 {
                     eprintln!("🛑SORRY! The model you selected is not able to caption images. Please select either `claude-v3-sonnet` or `claude-v3-haiku`.");
                     std::process::exit(1);

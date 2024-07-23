@@ -141,6 +141,7 @@ pub fn load_bedrust_config() -> Result<BedrustConfig, anyhow::Error> {
     let bedrust_config_file_path = config_dir.join(constants::BEDRUST_CONFIG_FILE_NAME);
 
     let file = fs::File::open(bedrust_config_file_path)?;
+    //let config: BedrustConfig = ron::de::from_reader(file)?;
     let config: BedrustConfig = ron::de::from_reader(file)?;
     Ok(config)
 }

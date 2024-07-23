@@ -16,6 +16,9 @@ Here are the files:
 "#;
 
 
+// NOTE: When using Claude you can use the Agent prompt to just finalize the array - Thank you
+// Thiago <3 
+// This means I can start an array and it should finish it for me
 pub static PROJECT_GUESS_PROMPT: &str = r#"
 You are helping me figure out what kind of software development projects people are working on. To figure this out, you will look at a file structure of a directory and return to me an array of important file names related to that project type. You will only respond with that array and nothing else. Only return file types that are text files (do not return file types that are images or binaries)
 
