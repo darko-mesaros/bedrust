@@ -29,6 +29,9 @@ pub struct Args {
     #[arg(short, long)]
     pub caption: Option<PathBuf>,
 
+    #[arg(short, long)]
+    pub source: Option<PathBuf>,
+
     #[arg(short)]
     pub xml: bool,
 }
@@ -53,6 +56,7 @@ pub enum ArgModels {
     ClaudeV21,
     ClaudeV3Sonnet,
     ClaudeV3Haiku,
+    ClaudeV35Sonnet,
     Jurrasic2Ultra,
     TitanTextExpressV1,
     Mixtral8x7bInstruct,
@@ -73,6 +77,7 @@ impl ArgModels {
             ArgModels::ClaudeV21 => "anthropic.claude-v2:1",
             ArgModels::ClaudeV3Haiku => "anthropic.claude-3-haiku-20240307-v1:0",
             ArgModels::ClaudeV3Sonnet => "anthropic.claude-3-sonnet-20240229-v1:0",
+            ArgModels::ClaudeV35Sonnet => "anthropic.claude-3-5-sonnet-20240620-v1:0",
             ArgModels::Llama270b => "meta.llama2-70b-chat-v1",
             ArgModels::CohereCommand => "cohere.command-text-v14",
             ArgModels::Jurrasic2Ultra => "ai21.j2-ultra-v1",
@@ -116,12 +121,16 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
     println!("{}", "/c\t - Clear current chat history".truecolor(255, 229, 153));
     println!("{}", "/q\t - Quit".truecolor(255, 229, 153));
     println!("{}", "----------------------------------------".cyan());
-    println!(
-        "{}{}{} 💬",
-        "Now with ".italic(),
-        "CHAT".red().on_yellow().blink(),
-        " enabled!".italic()
-    );
+    println!();
+    // NOTE: This println! statement is used to advertise new features
+    // (This could probably be a nicer function)
+    // Removed the CHAT enabled notification
+    // println!(
+    //     "{}{}{} 💬",
+    //     "Now with ".italic(),
+    //     "CHAT".red().on_yellow().blink(),
+    //     " enabled!".italic()
+    // );
 
     Ok(())
 }
@@ -132,6 +141,7 @@ pub fn load_bedrust_config() -> Result<BedrustConfig, anyhow::Error> {
     let bedrust_config_file_path = config_dir.join(constants::BEDRUST_CONFIG_FILE_NAME);
 
     let file = fs::File::open(bedrust_config_file_path)?;
+    //let config: BedrustConfig = ron::de::from_reader(file)?;
     let config: BedrustConfig = ron::de::from_reader(file)?;
     Ok(config)
 }

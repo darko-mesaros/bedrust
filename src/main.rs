@@ -18,6 +18,9 @@ use bedrust::captioner::OutputFormat;
 use bedrust::utils::{check_for_config, initialize_config, print_warning};
 use clap::Parser;
 
+use bedrust::code::code_chat;
+use bedrust::constants;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // parsing arguments
@@ -71,7 +74,7 @@ async fn main() -> Result<()> {
     let bedrust_config = utils::load_bedrust_config()?;
 
     // configuring the SDK
-    let config = configure_aws(String::from("us-west-2"), bedrust_config.aws_profile).await;
+    let config = configure_aws(String::from("us-east-1"), bedrust_config.aws_profile).await;
     // setup the bedrock-runtime client
     let bedrock_runtime_client = aws_sdk_bedrockruntime::Client::new(&config);
     // setup the bedrock client
@@ -103,6 +106,7 @@ async fn main() -> Result<()> {
             images.push(Image::new(file)?);
         }
 
+        // TODO: Broken when used with Claude 3.5
         caption_image(
             &mut images,
             model_id,
@@ -135,8 +139,30 @@ async fn main() -> Result<()> {
     } else {
         // default run
         utils::hello_header("Bedrust")?;
-        // STORE HISTORY:
-        let mut conversation_history = String::new();
+
+        // BETA: SOURCE READING
+        let mut conversation_history =  if arguments.source.is_some() {
+            println!("----------------------------------------");
+            print_warning("⚠ THIS IS A BETA FEATURE ⚠");
+            println!("----------------------------------------");
+            println!("💾 | Ooh, it Seems we are talking about code today!");
+            println!("💾 | I was given this dir to review: {:?}", arguments.source.clone().unwrap().into_os_string());
+            println!("----------------------------------------");
+            let mut convo = String::new();
+            convo.push_str(constants::CODE_CHAT_PROMPT);
+
+            let code = code_chat(arguments.source.clone().unwrap(), &bedrock_runtime_client).await?;
+            println!("----------------------------------------");
+            print_warning("⚠ THIS IS A BETA FEATURE ⚠");
+
+            // Return this conversation
+            convo.push_str(code.as_str());
+            convo
+        } else { // We are not looking at code
+            // Just return an empty string
+            String::new()
+        };
+
         // get user input
         loop {
             println!("----------------------------------------");

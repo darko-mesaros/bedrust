@@ -2,9 +2,12 @@ pub mod captioner;
 pub mod constants;
 pub mod models;
 pub mod utils;
+pub mod code;
 
 use anyhow::anyhow;
+use aws_config::imds::credentials::ImdsCredentialsProvider;
 use aws_config::meta::region::RegionProviderChain;
+use aws_config::profile::ProfileFileRegionProvider;
 use aws_config::BehaviorVersion;
 use aws_types::region::Region;
 use aws_config::meta::credentials::CredentialsProviderChain;
@@ -17,7 +20,7 @@ use serde::ser::Error;
 use serde::Deserialize;
 use serde_json::Value;
 
-use std::{env, io};
+use std::io;
 
 use anyhow::Result;
 
@@ -39,23 +42,32 @@ use std::io::Write;
 
 use crate::captioner::Image;
 
-//======================================== AWS
+//======================================== AWS_REGION
+// FIX: Return Result
 pub async fn configure_aws(fallback_region: String, profile_name: String) -> aws_config::SdkConfig {
-    let region_provider =
-        // NOTE: this is different than the default Rust SDK behavior which checks AWS_REGION first. Is this intentional?
-        RegionProviderChain::first_try(env::var("AWS_DEFAULT_REGION").ok().map(Region::new))
-            .or_default_provider()
-            .or_else(Region::new(fallback_region));
-
+    let region_provider = RegionProviderChain::first_try(
+        ProfileFileRegionProvider::builder()
+        .profile_name(&profile_name)
+        .build()
+    )
+        .or_else(aws_config::environment::EnvironmentVariableRegionProvider::new())
+        .or_else(aws_config::imds::region::ImdsRegionProvider::builder().build())
+        .or_else(Region::new(fallback_region));
     
-    // NOTE: This checks, ENV first, then profile, then it falls back to the whatever the default
-    // is
-    let provider = CredentialsProviderChain::first_try("Environment", EnvironmentVariableCredentialsProvider::new())
-        .or_else("Profile", ProfileFileCredentialsProvider::builder().profile_name(profile_name).build())
-        .or_default_provider().await;
+    let credentials_provider = CredentialsProviderChain::first_try(
+        "Environment",
+        EnvironmentVariableCredentialsProvider::new()
+        )
+        .or_else(
+            "Profile", 
+            ProfileFileCredentialsProvider::builder()
+            .profile_name(profile_name)
+            .build()
+            )
+        .or_else("IMDS", ImdsCredentialsProvider::builder().build());
 
     aws_config::defaults(BehaviorVersion::latest())
-        .credentials_provider(provider)
+        .credentials_provider(credentials_provider)
         .region(region_provider)
         .load()
         .await
@@ -282,6 +294,30 @@ fn convert_question_to_model_options(
                 body: claudev3_body,
             })
         }
+        "anthropic.claude-3-5-sonnet-20240620-v1:0" => {
+            let claude_image: Option<ClaudeImageSource> = if image.is_some() {
+                Some(ClaudeImageSource {
+                    image_type: "base64".to_string(),
+                    data: image.as_ref().unwrap().base64.clone(),
+                    media_type: format!("image/{}", image.as_ref().unwrap().extension),
+                })
+            } else {
+                None
+            };
+            let d = model_defaults.claude_v3;
+            let claudev3_body = ClaudeV3Body::new(
+                d.anthropic_version,
+                d.max_tokens,
+                d.role,
+                d.default_content_type,
+                question,
+                claude_image,
+            );
+            Ok(ModelOptions::Claude3 {
+                model_id: String::from("anthropic.claude-3-5-sonnet-20240620-v1:0"),
+                body: claudev3_body,
+            })
+        }
         "anthropic.claude-v2:1" => {
             let d = model_defaults.claude_v21;
             // TODO: Move to the messages api from v3
@@ -404,6 +440,7 @@ pub async fn ask_bedrock(
                 // TODO: Programmaticall check for multimodality of FMs
                 if model_id != "anthropic.claude-3-sonnet-20240229-v1:0"
                     && model_id != "anthropic.claude-3-haiku-20240307-v1:0"
+                    && model_id != "anthropic.claude-3-5-sonnet-20240620-v1:0"
                 {
                     eprintln!("🛑SORRY! The model you selected is not able to caption images. Please select either `claude-v3-sonnet` or `claude-v3-haiku`.");
                     std::process::exit(1);
@@ -452,7 +489,8 @@ fn process_response(
                 serde_json::from_slice::<ClaudeResponse>(payload_bytes).map(|res| res.completion)
             }
             "anthropic.claude-3-sonnet-20240229-v1:0"
-            | "anthropic.claude-3-haiku-20240307-v1:0" => {
+            | "anthropic.claude-3-haiku-20240307-v1:0"
+            | "anthropic.claude-3-5-sonnet-20240620-v1:0" => {
                 // NOTE: ClaudeV3 is complicated and the streamed response is not always the same
                 // this means we need to check for specific fields in the response and then return only
                 // if we have the type of response set to "text_delta"
