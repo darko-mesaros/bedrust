@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO: Better code testing
 - TODO: Handle longer pastes better
 
+## [0.7.5] - 2024-07-30
+
+### Added
+- Added support for Claude 3.5 Sonnet
+- Added a *BETA* feature that allows you to put a code repository into context so a user can chat about their code.
+
+### Changed
+- Fixed the region provider issue where it would always default to the `us-west-2` region, no matter the profile being used.
+
 ## [0.7.4] - 2024-05-06
 ### Changed
 - Fixed the credential provider chain issue. Now it will try a few credential providers, before giving up.
