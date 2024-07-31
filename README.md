@@ -4,8 +4,6 @@
 
 A neat way to invoke models on [Amazon Bedrock](https://aws.amazon.com/bedrock/). Written in Rust, and LIVE on [Twitch](https://twitch.tv/ruptwelve).
 
-**NOW WITH CHAT 💬** Yes, you can actually have a conversation with LLMs now🥳! Instead of it being able to just send one question at a time, you can now have contextual conversation with a LLM of your choice. This feature is available since version `0.6.0`.
-
 Currently supporting the following models:
 - **Claude 3.5 Sonnet**
 - Claude V2
@@ -86,13 +84,14 @@ Or if you wish to use the default model (the one defined during `--init` / in yo
 
 ## Usage
 ```bash
-Usage: bedrust [OPTIONS] --model-id <MODEL_ID>
+Usage: bedrust [OPTIONS]
 
 Options:
-      --init
-  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, claude-v21, claude-v3-sonnet, claude-v3-haiku, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct, mistral-large]
-  -c, --caption <CAPTION>
-  -x
+      --init                 
+  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, claude-v21, claude-v3-sonnet, claude-v3-haiku, claude-v35-sonnet, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct, mistral-large]
+  -c, --caption <CAPTION>    
+  -s, --source <SOURCE>      
+  -x                         
   -h, --help                 Print help
   -V, --version              Print version
 ```
@@ -132,6 +131,16 @@ Here is an example of the output:
 ```
 
 Additionally you can customize captioning *prompt* and *supported image file formats* by editing the `bedrust_config.ron` file in the root of this project.
+
+## ⚠️  BETA FEATURE - Source Code analysis
+
+You can now point Bedrust to a directory containing some source code. This will allow you to discuss your code repository in context, and it can provide you with code suggestions, improvements, and further development. 
+
+> *Note:* Since this is a beta feature, it has it's limitations. For example, it is not able to handle really big code bases. And because it sends your entire code base into the context, it may cost you significantly more.
+
+```bash
+bedrust --source ~/workspace/repos/your_code_repo
+```
 
 ## Configuration files 
 
