@@ -7,9 +7,10 @@ A neat way to invoke models on [Amazon Bedrock](https://aws.amazon.com/bedrock/)
 **NOW WITH CHAT 💬** Yes, you can actually have a conversation with LLMs now🥳! Instead of it being able to just send one question at a time, you can now have contextual conversation with a LLM of your choice. This feature is available since version `0.6.0`.
 
 Currently supporting the following models:
+- **Claude 3.5 Sonnet**
 - Claude V2
-- **Claude V3 Sonnet**
-- **Claude V3 Haiku**
+- Claude V3 Sonnet
+- Claude V3 Haiku
 - Llama2 70B
 - Cohere Command
 - Jurrasic 2 Ultra
