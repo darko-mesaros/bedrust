@@ -3,12 +3,11 @@ use std::io::Write;
 
 use anyhow::anyhow;
 use anyhow::Result;
+use aws_sdk_bedrockruntime::types::InferenceConfiguration;
 use bedrust::utils;
 
-use bedrust::ask_bedrock;
 use bedrust::configure_aws;
 use bedrust::utils::prompt_for_model_selection;
-use bedrust::RunType;
 
 use bedrust::captioner::caption_image;
 use bedrust::captioner::list_files_in_path_by_extension;
@@ -20,6 +19,15 @@ use clap::Parser;
 
 use bedrust::code::code_chat;
 use bedrust::constants;
+use bedrust::models::converse_stream::call_converse_stream;
+
+// NOTE - TODO:
+// So far I've implemented the converse API for general purpose chat and the code chat.
+// What I need to do is:
+// - Support Images and captioning
+// - Store the default inference parameters in the config file
+// - Figure out feature support matrix for the Converse API and the models.
+// - Remove nom v3.2.1 ?
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -88,6 +96,14 @@ async fn main() -> Result<()> {
         Some(model_id) => model_id,
         None => prompt_for_model_selection()?
     }.to_str();
+
+    // === DEFAULT INFERENCE PARAMETERS ===
+    // NOTE: This needs to be a config element
+    let inference_parameters = InferenceConfiguration::builder()
+        .max_tokens(2048)
+        .top_p(0.8)
+        .temperature(0.5)
+        .build();
 
     // if we enabled captioning of images
     if arguments.caption.is_some() {
@@ -199,17 +215,27 @@ async fn main() -> Result<()> {
             println!("----------------------------------------");
             println!("☎️  | Calling Model: {}", &model_id);
             println!("----------------------------------------");
-            let response = ask_bedrock(
-                //&question.to_string(),
+            // let response = ask_bedrock(
+            //     //&question.to_string(),
+            //     &conversation_history.to_string(),
+            //     None,
+            //     model_id,
+            //     RunType::Standard,
+            //     &bedrock_runtime_client,
+            //     &bedrock_client,
+            // )
+            // .await?;
+            // conversation_history.push_str(&response);
+            // conversation_history.push('\n');
+
+            let streamresp = call_converse_stream(
+                &bedrock_runtime_client, 
+                model_id.to_string(),
                 &conversation_history.to_string(),
-                None,
-                model_id,
-                RunType::Standard,
-                &bedrock_runtime_client,
-                &bedrock_client,
+                inference_parameters.clone(),
             )
             .await?;
-            conversation_history.push_str(&response);
+            conversation_history.push_str(&streamresp);
             conversation_history.push('\n');
         }
     }

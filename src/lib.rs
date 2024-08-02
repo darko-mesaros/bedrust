@@ -556,7 +556,7 @@ async fn call_bedrock(
     }
 }
 
-/// Add context and advice for specific error variants
+// Add context and advice for specific error variants
 fn give_bedrock_hints(err: impl Into<aws_sdk_bedrockruntime::Error>) -> anyhow::Error {
     let err = err.into();
     let context = match &err {

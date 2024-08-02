@@ -5,6 +5,8 @@ pub mod jurrasic2;
 pub mod llama2;
 pub mod mistral;
 pub mod titan;
+pub mod converse;
+pub mod converse_stream;
 
 use claude::{ClaudeV21Config, ClaudeV2Config};
 use claudev3::ClaudeV3Config;
