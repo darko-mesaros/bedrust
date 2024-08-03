@@ -248,11 +248,12 @@ fn convert_question_to_model_options(
         }
         "anthropic.claude-3-sonnet-20240229-v1:0" => {
             let claude_image: Option<ClaudeImageSource> = if image.is_some() {
-                Some(ClaudeImageSource {
-                    image_type: "base64".to_string(),
-                    data: image.as_ref().unwrap().base64.clone(),
-                    media_type: format!("image/{}", image.as_ref().unwrap().extension),
-                })
+                // Some(ClaudeImageSource {
+                //     image_type: "base64".to_string(),
+                //     data: image.as_ref().unwrap().base64.clone(),
+                //     media_type: format!("image/{}", image.as_ref().unwrap().extension),
+                // })
+                None
             } else {
                 None
             };
@@ -272,11 +273,12 @@ fn convert_question_to_model_options(
         }
         "anthropic.claude-3-haiku-20240307-v1:0" => {
             let claude_image: Option<ClaudeImageSource> = if image.is_some() {
-                Some(ClaudeImageSource {
-                    image_type: "base64".to_string(),
-                    data: image.as_ref().unwrap().base64.clone(),
-                    media_type: format!("image/{}", image.as_ref().unwrap().extension),
-                })
+                // Some(ClaudeImageSource {
+                //     image_type: "base64".to_string(),
+                //     data: image.as_ref().unwrap().base64.clone(),
+                //     media_type: format!("image/{}", image.as_ref().unwrap().extension),
+                // })
+                None
             } else {
                 None
             };
@@ -296,11 +298,12 @@ fn convert_question_to_model_options(
         }
         "anthropic.claude-3-5-sonnet-20240620-v1:0" => {
             let claude_image: Option<ClaudeImageSource> = if image.is_some() {
-                Some(ClaudeImageSource {
-                    image_type: "base64".to_string(),
-                    data: image.as_ref().unwrap().base64.clone(),
-                    media_type: format!("image/{}", image.as_ref().unwrap().extension),
-                })
+                // Some(ClaudeImageSource {
+                //     image_type: "base64".to_string(),
+                //     data: image.as_ref().unwrap().base64.clone(),
+                //     media_type: format!("image/{}", image.as_ref().unwrap().extension),
+                // })
+                None
             } else {
                 None
             };

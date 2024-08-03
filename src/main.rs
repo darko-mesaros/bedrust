@@ -21,13 +21,15 @@ use bedrust::code::code_chat;
 use bedrust::constants;
 use bedrust::models::converse_stream::call_converse_stream;
 
-// NOTE - TODO:
+// TODO:
 // So far I've implemented the converse API for general purpose chat and the code chat.
 // What I need to do is:
-// - Support Images and captioning
+// - Support Images and captioning - [DONE] ✅
+//  - Check if model supports images before attempting to run
 // - Store the default inference parameters in the config file
 // - Figure out feature support matrix for the Converse API and the models.
 // - Remove nom v3.2.1 ?
+// - Make sure everything works after ripping out the old code
 
 #[tokio::main]
 async fn main() -> Result<()> {

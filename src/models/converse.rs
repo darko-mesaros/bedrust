@@ -4,7 +4,7 @@ use aws_sdk_bedrockruntime::{
         ConverseOutput
     }, 
     types::{
-    ContentBlock, ConversationRole, InferenceConfiguration, Message
+    ContentBlock, ConversationRole, InferenceConfiguration, Message, SystemContentBlock
 }};
 
 // Converse Error type
@@ -55,17 +55,21 @@ fn get_converse_output_text(output: ConverseOutput) -> Result<String, BedrockCon
 pub async fn call_converse(
     bc: &aws_sdk_bedrockruntime::Client,
     model_id: String,
-    user_message: &str,
-    inference_parameters: InferenceConfiguration
+    inference_parameters: InferenceConfiguration,
+    content: ContentBlock,
+    system: Option<Vec<SystemContentBlock>>
 ) -> Result<String, BedrockConverseError> {
+
 
     let response = bc
         .converse()
         .model_id(model_id)
+        .set_system(system)
         .messages(
             Message::builder()
                 .role(ConversationRole::User)
-                .content(ContentBlock::Text(user_message.to_string()))
+                // FIX: How to not clone this?
+                .content(content.clone())
                 .build()
                 .map_err(|_| "Failed to build message")?,
         )
@@ -73,12 +77,12 @@ pub async fn call_converse(
         .send()
         .await;
 
-
     match response {
         Ok(output) => {
             let text = get_converse_output_text(output)?;
-            println!("{}", text);
-            // Print, and return the text
+            if content.is_text() {
+                println!("{}", text);
+            }
             Ok(text)
         }
         Err(e) => Err(e

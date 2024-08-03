@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::PathBuf};
 use std::fs;
 use anyhow::anyhow;
-use aws_sdk_bedrockruntime::types::InferenceConfiguration;
+use aws_sdk_bedrockruntime::types::{ContentBlock, InferenceConfiguration};
 use walkdir::{WalkDir, DirEntry};
 use crate::constants;
 use crate::models::converse::call_converse;
@@ -111,12 +111,13 @@ async fn guess_code_type(files: Vec<PathBuf>, client: &aws_sdk_bedrockruntime::C
     // FIX: This just prints out the files - as this is how the call_bedrock function works
     // This println! is here to just make it look nice
     println!("Including the following file extensions in this run: ");
-    // let response = call_bedrock(client, bcall, RunType::Standard).await?;
+    let content = ContentBlock::Text(query);
     let response = call_converse(
         client,
         model_id.to_string(),
-        &query,
         inf_param,
+        content,
+        None,
     ).await?;
     let extensions: Vec<String> = serde_json::from_str(&response)?;
     // TODO: Have the ability to parse the response if its not an array - give it a chance to
