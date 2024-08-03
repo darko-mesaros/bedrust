@@ -155,7 +155,7 @@ pub static MODEL_CONFIG_FILE: &str = r#"ModelConfigs(
 )
 "#;
 
-// UPDATED: 2024-03-30
+// UPDATED: 2024-08-02
 pub static BEDRUST_CONFIG_FILE: &str = r#"BedrustConfig(
   // define what AWS profile to use
   aws_profile: "default",
@@ -164,7 +164,12 @@ pub static BEDRUST_CONFIG_FILE: &str = r#"BedrustConfig(
   // the prompt being used for image captioning
   caption_prompt: "Please caption the following image for the sake of accessibility. Return just the caption, and nothing else. Keep it clean, and under 100 words.",
   // choose to show the big ASCII banner on startup or not
-  show_banner: true
+  show_banner: true,
+  inference_params: (
+    temperature: 0.5,
+    max_tokens: 2048,
+    top_p: 0.8, 
+  ),
 )
 "#;
 // FIGLET FONT

@@ -46,6 +46,14 @@ pub struct BedrustConfig {
     // for now if there is no configuration line use true
     #[serde(default="_default_true")]
     pub show_banner: bool,
+    pub inference_params: InferenceParams
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct InferenceParams {
+    pub temperature: f32,
+    pub max_tokens: i32,
+    pub top_p: f32,
 }
 
 #[derive(clap::ValueEnum, Clone, Serialize, Deserialize, Debug, Copy)]

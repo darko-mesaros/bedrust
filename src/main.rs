@@ -20,15 +20,17 @@ use clap::Parser;
 use bedrust::code::code_chat;
 use bedrust::constants;
 use bedrust::models::converse_stream::call_converse_stream;
+use bedrust::models::{ModelFeatures, check_model_features};
 
 // TODO:
 // So far I've implemented the converse API for general purpose chat and the code chat.
 // What I need to do is:
 // - Support Images and captioning - [DONE] ✅
-//  - Check if model supports images before attempting to run
-// - Store the default inference parameters in the config file
-// - Figure out feature support matrix for the Converse API and the models.
+//  - Check if model supports images before attempting to run - [DONE] ✅
+// - Store the default inference parameters in the config file - [DONE] ✅
+// - Figure out feature support matrix for the Converse API and the models. - [DONE] ✅
 // - Remove nom v3.2.1 ?
+// - Remove unwanted commented out code
 // - Make sure everything works after ripping out the old code
 
 #[tokio::main]
@@ -100,60 +102,70 @@ async fn main() -> Result<()> {
     }.to_str();
 
     // === DEFAULT INFERENCE PARAMETERS ===
-    // NOTE: This needs to be a config element
     let inference_parameters = InferenceConfiguration::builder()
-        .max_tokens(2048)
-        .top_p(0.8)
-        .temperature(0.5)
+        .max_tokens(bedrust_config.inference_params.max_tokens)
+        .top_p(bedrust_config.inference_params.top_p)
+        .temperature(bedrust_config.inference_params.temperature)
         .build();
 
     // if we enabled captioning of images
     if arguments.caption.is_some() {
-        // FIX: This should be a function
-        println!("----------------------------------------");
-        println!("🖼️ | Image captioner running.");
-        let path = arguments
-            .caption
-            .ok_or_else(|| anyhow!("No path specified"))?;
-        println!("⌛ | Processing images in: {:?}", &path);
-        let files = list_files_in_path_by_extension(path, bedrust_config.supported_images)?;
-        println!("🔎 | Found {:?} images in path.", &files.len());
+        match check_model_features(model_id, &bedrock_client, ModelFeatures::Images).await {
+            Ok(b) => {
+                match b {
+                    true => {
+                        // FIX: This should be a function
+                        println!("----------------------------------------");
+                        println!("🖼️ | Image captioner running.");
+                        let path = arguments
+                            .caption
+                            .ok_or_else(|| anyhow!("No path specified"))?;
+                        println!("⌛ | Processing images in: {:?}", &path);
+                        let files = list_files_in_path_by_extension(path, bedrust_config.supported_images)?;
+                        println!("🔎 | Found {:?} images in path.", &files.len());
 
-        let mut images: Vec<Image> = Vec::new();
-        for file in &files {
-            images.push(Image::new(file)?);
-        }
+                        let mut images: Vec<Image> = Vec::new();
+                        for file in &files {
+                            images.push(Image::new(file)?);
+                        }
 
-        // TODO: Broken when used with Claude 3.5
-        caption_image(
-            &mut images,
-            model_id,
-            &bedrust_config.caption_prompt,
-            &bedrock_runtime_client,
-            &bedrock_client,
-        )
-        .await?;
+                        caption_image(
+                            &mut images,
+                            model_id,
+                            &bedrust_config.caption_prompt,
+                            &bedrock_runtime_client,
+                            &bedrock_client,
+                        )
+                        .await?;
 
-        // NOTE: This is parsing the `-x` argument and then writing or not, an XML file
-        // Thanks StellyUK <3
+                        // NOTE: This is parsing the `-x` argument and then writing or not, an XML file
+                        // Thanks StellyUK <3
 
-        // FIX: This whole if else statement does not look nice.
-        // i feel it can be better. As doing the whole logic
-        // behind an expression seems ... weird
-        let outfile = if arguments.xml {
-            let outfile = "captions.xml";
-            write_captions(images, OutputFormat::Xml, outfile)?;
-            outfile
-        } else {
-            let outfile = "captions.json";
-            write_captions(images, OutputFormat::Json, outfile)?;
-            outfile
+                        // FIX: This whole if else statement does not look nice.
+                        // i feel it can be better. As doing the whole logic
+                        // behind an expression seems ... weird
+                        let outfile = if arguments.xml {
+                            let outfile = "captions.xml";
+                            write_captions(images, OutputFormat::Xml, outfile)?;
+                            outfile
+                        } else {
+                            let outfile = "captions.json";
+                            write_captions(images, OutputFormat::Json, outfile)?;
+                            outfile
+                        };
+                        println!(
+                            "✅ | Captioning complete, find the generated captions in `{}`",
+                            outfile
+                        );
+                        println!("----------------------------------------");
+                    }
+                    false => {
+                        eprintln!("The current model selected does not support Images. Please consider using one that does.")
+                    }
+                }
+            } 
+            Err(e) => eprintln!("Unable to determine model features: {}", e)
         };
-        println!(
-            "✅ | Captioning complete, find the generated captions in `{}`",
-            outfile
-        );
-        println!("----------------------------------------");
     } else {
         // default run
         utils::hello_header("Bedrust")?;
