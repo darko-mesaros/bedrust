@@ -70,6 +70,7 @@ pub enum ArgModels {
     Mixtral8x7bInstruct,
     Mistral7bInstruct,
     MistralLarge,
+    MistralLarge2
 }
 
 impl Display for ArgModels {
@@ -93,6 +94,7 @@ impl ArgModels {
             ArgModels::Mixtral8x7bInstruct => "mistral.mixtral-8x7b-instruct-v0:1",
             ArgModels::Mistral7bInstruct => "mistral.mistral-7b-instruct-v0:2",
             ArgModels::MistralLarge => "mistral.mistral-large-2402-v1:0",
+            ArgModels::MistralLarge2 => "mistral.mistral-large-2407-v1:0"
         }
     }
 }
