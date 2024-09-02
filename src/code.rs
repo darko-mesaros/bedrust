@@ -100,18 +100,34 @@ async fn guess_code_type(files: Vec<PathBuf>, client: &aws_sdk_bedrockruntime::C
     // This println! is here to just make it look nice
     println!("Including the following file extensions in this run: ");
     let content = ContentBlock::Text(query);
-    let response = call_converse(
-        client,
-        model_id.to_string(),
-        inf_param,
-        content,
-        None,
-    ).await?;
-    let extensions: Vec<String> = serde_json::from_str(&response)?;
+    // === RETRY MECHANISM ===
+    let max_retries = 3;
+    let mut retry_count = 0;
+    while retry_count < max_retries {
+        match call_converse(
+            client,
+            model_id.to_string(),
+            inf_param.clone(),
+            content.clone(),
+            None,
+        ).await {
+            Ok(response) => {
+                let extensions: Vec<String> = serde_json::from_str(&response)?;
+                return Ok(extensions);
+            }
+            Err(e) => {
+                println!("🔴 | Error: {}", e);
+                retry_count += 1;
+                if retry_count >= max_retries {
+                    return Err(anyhow!("Failed to get a response after {} retries", max_retries));
+                }
+                tokio::time::sleep(std::time::Duration::from_secs(2u64.pow(retry_count))).await;
+            }
+        }
+    }
+    Err(anyhow!("Unexpected error in guess_code_type"))
     // TODO: Have the ability to parse the response if its not an array - give it a chance to
     // "THINK"
-
-    Ok(extensions)
 }
 
 fn get_file_contents(files: Vec<PathBuf>) -> Result<HashMap<PathBuf, String>, anyhow::Error> {
