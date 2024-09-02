@@ -2,7 +2,6 @@ use std::{collections::HashMap, path::PathBuf};
 use std::fs;
 use anyhow::anyhow;
 use aws_sdk_bedrockruntime::types::{ContentBlock, InferenceConfiguration};
-use walkdir::WalkDir;
 use crate::constants;
 use crate::models::converse::call_converse;
 use ignore::DirEntry;
