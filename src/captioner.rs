@@ -8,7 +8,6 @@ use aws_sdk_bedrockruntime::types::builders::ImageBlockBuilder;
 use aws_sdk_bedrockruntime::types::{ContentBlock, ImageBlock, ImageFormat, ImageSource, InferenceConfiguration, SystemContentBlock};
 use base64::{engine::general_purpose, Engine as _};
 
-use futures::TryFutureExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use quick_xml::se;
 use serde::Serialize;
