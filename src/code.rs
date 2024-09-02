@@ -24,7 +24,7 @@ pub async fn code_chat(p: PathBuf, client: &aws_sdk_bedrockruntime::Client ) -> 
     let inference_parameters: InferenceConfiguration = InferenceConfiguration::builder()
         .max_tokens(2048)
         .top_p(0.8)
-        .temperature(0.5)
+        .temperature(0.2)
         .build();
 
     // FIGURE OUT PROJECT
@@ -112,22 +112,30 @@ async fn guess_code_type(files: Vec<PathBuf>, client: &aws_sdk_bedrockruntime::C
             None,
         ).await {
             Ok(response) => {
-                let extensions: Vec<String> = serde_json::from_str(&response)?;
-                return Ok(extensions);
+                // check if the response is a valid array
+                match serde_json::from_str::<Vec<String>>(&response) {
+                    Ok(extensions) => return Ok(extensions),
+                    Err(_) => {
+                        println!("🔴 | Response from `guess_code_type` is not a valid array. Retrying ...");
+                        retry_count += 1;
+                    }
+                }
             }
             Err(e) => {
+                // if an error occurs, print it and retry
                 println!("🔴 | Error: {}", e);
                 retry_count += 1;
-                if retry_count >= max_retries {
-                    return Err(anyhow!("Failed to get a response after {} retries", max_retries));
-                }
-                tokio::time::sleep(std::time::Duration::from_secs(2u64.pow(retry_count))).await;
             }
         }
+        // if we have retried max_retries times, return an error
+        if retry_count >= max_retries {
+            return Err(anyhow!("Failed to get a response after {} retries", max_retries));
+        }
+        // sleep for 2^retry_count seconds - exponential backoff
+        tokio::time::sleep(std::time::Duration::from_secs(2u64.pow(retry_count))).await;
+        // === END RETRY MECHANISM ===
     }
     Err(anyhow!("Unexpected error in guess_code_type"))
-    // TODO: Have the ability to parse the response if its not an array - give it a chance to
-    // "THINK"
 }
 
 fn get_file_contents(files: Vec<PathBuf>) -> Result<HashMap<PathBuf, String>, anyhow::Error> {
