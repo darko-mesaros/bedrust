@@ -28,6 +28,7 @@ dialoguer = { version = "0.11.0", default-features = false, features = ["fuzzy-s
 dirs = "5.0.1"
 figlet-rs = "0.1.5"
 futures = "0.3.30"
+ignore = "0.4.22"
 image = "0.25.0"
 indicatif = "0.17.8"
 quick-xml = { version = "0.31.0", features = ["serde", "serde-types", "serialize"] }

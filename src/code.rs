@@ -2,9 +2,10 @@ use std::{collections::HashMap, path::PathBuf};
 use std::fs;
 use anyhow::anyhow;
 use aws_sdk_bedrockruntime::types::{ContentBlock, InferenceConfiguration};
-use walkdir::{WalkDir, DirEntry};
+use walkdir::WalkDir;
 use crate::constants;
 use crate::models::converse::call_converse;
+use ignore::DirEntry;
 
 // NOTE:
 // A few things to note here:
@@ -55,43 +56,31 @@ fn is_hidden(entry: &DirEntry) -> bool {
          .unwrap_or(false)
 }
 
-// Function to check if the file has one of the desired extensions
-fn has_desired_extension(entry: &DirEntry, extensions: &[String]) -> bool {
-    entry.file_type().is_file() && entry.path().extension()
-        .and_then(|ext| ext.to_str())
-        .map(|ext| extensions.contains(&ext.into()))
-        .unwrap_or(false)
-}
-
-// Function to filter out specific paths
-fn is_not_ignored(entry: &DirEntry) -> bool {
-    let path = entry.path();
-    let ignored_paths = constants::CODE_IGNORE_DIRS;
-    !ignored_paths.iter().any(|ignored| path.to_string_lossy().contains(ignored))
-}
-
 // gets all files of a give filename in a given dir up to a certain depth
 fn get_all_files(p: &PathBuf, ext: Option<Vec<String>>, l: u8) -> Result<Vec<PathBuf>, anyhow::Error> {
     if !p.exists() {
         return Err(anyhow!("🔴 | The specified path does not exist. Sorry!"));
     }
 
-    let files: Vec<_> = WalkDir::new(p)
-        .max_depth(l.into())
-        .into_iter()
-        .filter_entry(is_not_ignored)
+    let mut builder= ignore::WalkBuilder::new(p);
+    builder.max_depth(Some(l as usize));
+    builder.hidden(false);
+
+    let walker = builder.build();
+
+    let files: Vec<_> = walker
         .filter_map(Result::ok)
-        .filter(|entry| 
-            {
-                if ext.is_some() { 
-                    let extensions = ext.clone().unwrap();
-                    has_desired_extension(entry, &extensions) && !is_hidden(entry) 
-                } else {
-                    // FIX: Seems to return hidden files as well
-                    !is_hidden(entry)
-                }
-            }
-        )
+        .filter(|entry| {
+            let is_file = entry.file_type().map_or(false, |ft| ft.is_file());
+            let matches_extension = ext.as_ref().map_or(true, |extensions| {
+                entry.path().extension()
+                    .and_then(|ext| ext.to_str())
+                    .map_or(false, |ext| extensions.contains(&ext.to_string()))
+            });
+            let is_not_ignored = !is_hidden(entry);
+
+            is_file && matches_extension && is_not_ignored
+        })
         .map(|e| e.path().to_path_buf())
         .collect();
 
