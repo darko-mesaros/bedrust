@@ -29,7 +29,7 @@ use bedrust::models::{ModelFeatures, check_model_features};
 //  - Check if model supports images before attempting to run - [DONE] ✅
 // - Store the default inference parameters in the config file - [DONE] ✅
 // - Figure out feature support matrix for the Converse API and the models. - [DONE] ✅
-// - Remove nom v3.2.1 ?
+// - Remove nom v3.2.1 - [DONE] ✅
 // - Remove unwanted commented out code
 // - Make sure everything works after ripping out the old code
 

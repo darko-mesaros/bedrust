@@ -38,5 +38,4 @@ serde_json = "1.0.116"
 tempfile = "3.10.1"
 termcolor = "1.4.1"
 tokio = { version = "1.37.0", features = ["full"] }
-tree_magic = "0.2.3"
 walkdir = "2.5.0"
