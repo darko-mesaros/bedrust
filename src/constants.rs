@@ -29,6 +29,7 @@ Give me an array of important files for a project type that has the following di
 "#;
 
 // HELPER CONSTANTS
+// FIX: the model id is hardcoded, we need to make this configurable
 pub static PROJECT_GUESS_MODEL_ID: &str = "anthropic.claude-3-sonnet-20240229-v1:0";
 pub static CODE_IGNORE_DIRS: &[&str] = &[
         // Rust
