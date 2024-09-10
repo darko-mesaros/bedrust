@@ -82,6 +82,7 @@ fn get_all_files(p: &PathBuf, ext: Option<Vec<String>>, l: u8) -> Result<Vec<Pat
                 }
             }
         )
+	.filter(|entry| !entry.path().to_str().unwrap_or("").ends_with(".pickle"))
         .map(|e| e.path().to_path_buf())
         .collect();
 
