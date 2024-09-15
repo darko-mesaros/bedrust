@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO: Ability to generate images
 - TODO: Better code testing
 - TODO: Handle longer pastes better
+## [0.8.0] - 2024-09-14
+### Added
+- Support for Mistral Large 2
+
+### Changed
+- Changed the whole underlying system to use the AWS Bedrock Converse API. No longer having the need to pass model specific parameters depending on the model chosen.
+- Updated the code chat feature to support `.gitignore` files
+- Added additional retries and checks to the code chat feature
+
+### Thanks
+- Thank you Stephen for the feature feedbacks
 
 ## [0.7.5] - 2024-07-30
 

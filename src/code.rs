@@ -1,11 +1,10 @@
-use std::{collections::HashMap, path::PathBuf};
-use std::fs;
-use anyhow::anyhow;
-use walkdir::{WalkDir, DirEntry};
 use crate::constants;
-use crate::RunType;
-use crate::mk_bedrock_call;
-use crate::call_bedrock;
+use crate::models::converse::call_converse;
+use anyhow::anyhow;
+use aws_sdk_bedrockruntime::types::{ContentBlock, InferenceConfiguration};
+use ignore::DirEntry;
+use std::fs;
+use std::{collections::HashMap, path::PathBuf};
 
 // NOTE:
 // A few things to note here:
@@ -15,22 +14,38 @@ use crate::call_bedrock;
 // - We need to provide to bits of information before the run commences:
 //   - Size of the files that will be sent over
 //   - Project type we assumed / file extensions being sent over
+//
 
-pub async fn code_chat(p: PathBuf, client: &aws_sdk_bedrockruntime::Client ) -> Result<String, anyhow::Error> {
+pub async fn code_chat(
+    p: PathBuf,
+    client: &aws_sdk_bedrockruntime::Client,
+) -> Result<String, anyhow::Error> {
+    // === DEFAULT INFERENCE PARAMETERS ===
+    // NOTE: Not sure if this is the best way to store this. Maybe also as part of a configuraiton
+    // run
+    // Maybe even have specific parameters for just guessing the code with a low temp value
+    let inference_parameters: InferenceConfiguration = InferenceConfiguration::builder()
+        .max_tokens(2048)
+        .top_p(0.8)
+        .temperature(0.2)
+        .build();
+
     // FIGURE OUT PROJECT
     // FIX: Seems to return hidden files too
     let all_files = get_all_files(&p, None, 3)?;
-    let extn = guess_code_type(all_files, client).await?;
-    
+    let extn = guess_code_type(all_files, client, inference_parameters).await?;
+
     // get all files with the extensions from above, and go 2 levels deep
     let files = get_all_files(&p, Some(extn), 3)?;
     let contents = get_file_contents(files)?;
 
     let mut formatted_contents = String::new();
     for (filename, content) in &contents {
-        let string: String = format!("\n<filename>{}</filename>\n<file_contents>{}\n</file_contents>", 
-                filename.to_string_lossy(), 
-                content);
+        let string: String = format!(
+            "\n<filename>{}</filename>\n<file_contents>{}\n</file_contents>",
+            filename.to_string_lossy(),
+            content
+        );
         formatted_contents.push_str(string.as_str())
     }
 
@@ -39,56 +54,55 @@ pub async fn code_chat(p: PathBuf, client: &aws_sdk_bedrockruntime::Client ) -> 
 
 // a simple function to check if a file name is hidden (has a . in front)
 fn is_hidden(entry: &DirEntry) -> bool {
-    entry.file_name()
-         .to_str()
-         .map(|s| s.starts_with('.'))
-         .unwrap_or(false)
-}
-
-// Function to check if the file has one of the desired extensions
-fn has_desired_extension(entry: &DirEntry, extensions: &[String]) -> bool {
-    entry.file_type().is_file() && entry.path().extension()
-        .and_then(|ext| ext.to_str())
-        .map(|ext| extensions.contains(&ext.into()))
+    entry
+        .file_name()
+        .to_str()
+        .map(|s| s.starts_with('.'))
         .unwrap_or(false)
 }
 
-// Function to filter out specific paths
-fn is_not_ignored(entry: &DirEntry) -> bool {
-    let path = entry.path();
-    let ignored_paths = constants::CODE_IGNORE_DIRS;
-    !ignored_paths.iter().any(|ignored| path.to_string_lossy().contains(ignored))
-}
-
 // gets all files of a give filename in a given dir up to a certain depth
-fn get_all_files(p: &PathBuf, ext: Option<Vec<String>>, l: u8) -> Result<Vec<PathBuf>, anyhow::Error> {
+fn get_all_files(
+    p: &PathBuf,
+    ext: Option<Vec<String>>,
+    l: u8,
+) -> Result<Vec<PathBuf>, anyhow::Error> {
     if !p.exists() {
         return Err(anyhow!("🔴 | The specified path does not exist. Sorry!"));
     }
 
-    let files: Vec<_> = WalkDir::new(p)
-        .max_depth(l.into())
-        .into_iter()
-        .filter_entry(is_not_ignored)
+    let mut builder = ignore::WalkBuilder::new(p);
+    builder.max_depth(Some(l as usize));
+    builder.hidden(false);
+
+    let walker = builder.build();
+
+    let files: Vec<_> = walker
         .filter_map(Result::ok)
-        .filter(|entry| 
-            {
-                if ext.is_some() { 
-                    let extensions = ext.clone().unwrap();
-                    has_desired_extension(entry, &extensions) && !is_hidden(entry) 
-                } else {
-                    // FIX: Seems to return hidden files as well
-                    !is_hidden(entry)
-                }
-            }
-        )
+        .filter(|entry| {
+            let is_file = entry.file_type().map_or(false, |ft| ft.is_file());
+            let matches_extension = ext.as_ref().map_or(true, |extensions| {
+                entry
+                    .path()
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                    .map_or(false, |ext| extensions.contains(&ext.to_string()))
+            });
+            let is_not_ignored = !is_hidden(entry);
+
+            is_file && matches_extension && is_not_ignored
+        })
         .map(|e| e.path().to_path_buf())
         .collect();
 
     Ok(files)
 }
 
-async fn guess_code_type(files: Vec<PathBuf>, client: &aws_sdk_bedrockruntime::Client) -> Result<Vec<String>, anyhow::Error> {
+async fn guess_code_type(
+    files: Vec<PathBuf>,
+    client: &aws_sdk_bedrockruntime::Client,
+    inf_param: InferenceConfiguration,
+) -> Result<Vec<String>, anyhow::Error> {
     // question
     let mut query = String::new();
     query.push_str(constants::PROJECT_GUESS_PROMPT);
@@ -97,27 +111,59 @@ async fn guess_code_type(files: Vec<PathBuf>, client: &aws_sdk_bedrockruntime::C
     }
 
     let model_id = constants::PROJECT_GUESS_MODEL_ID;
-    let bcall = mk_bedrock_call(&query, None, model_id)?;
+    // let bcall = mk_bedrock_call(&query, None, model_id)?;
     // FIX: This just prints out the files - as this is how the call_bedrock function works
     // This println! is here to just make it look nice
     println!("Including the following file extensions in this run: ");
-    let response = call_bedrock(client, bcall, RunType::Standard).await?;
-    let extensions: Vec<String> = serde_json::from_str(&response)?;
-    // TODO: Have the ability to parse the response if its not an array - give it a chance to
-    // "THINK"
-
-    Ok(extensions)
+    let content = ContentBlock::Text(query);
+    // === RETRY MECHANISM ===
+    let max_retries = 3;
+    let mut retry_count = 0;
+    while retry_count < max_retries {
+        match call_converse(
+            client,
+            model_id.to_string(),
+            inf_param.clone(),
+            content.clone(),
+            None,
+        )
+        .await
+        {
+            Ok(response) => {
+                // check if the response is a valid array
+                match serde_json::from_str::<Vec<String>>(&response) {
+                    Ok(extensions) => return Ok(extensions),
+                    Err(_) => {
+                        println!("🔴 | Response from `guess_code_type` is not a valid array. Retrying ...");
+                        retry_count += 1;
+                    }
+                }
+            }
+            Err(e) => {
+                // if an error occurs, print it and retry
+                println!("🔴 | Error: {}", e);
+                retry_count += 1;
+            }
+        }
+        // if we have retried max_retries times, return an error
+        if retry_count >= max_retries {
+            return Err(anyhow!(
+                "Failed to get a response after {} retries",
+                max_retries
+            ));
+        }
+        // sleep for 2^retry_count seconds - exponential backoff
+        tokio::time::sleep(std::time::Duration::from_secs(2u64.pow(retry_count))).await;
+        // === END RETRY MECHANISM ===
+    }
+    Err(anyhow!("Unexpected error in guess_code_type"))
 }
 
 fn get_file_contents(files: Vec<PathBuf>) -> Result<HashMap<PathBuf, String>, anyhow::Error> {
-
     let mut code = HashMap::new();
-    for file in files { 
+    for file in files {
         let contents = fs::read_to_string(&file).unwrap();
-        code.insert(
-            file,
-            contents,
-        );
+        code.insert(file, contents);
     }
 
     Ok(code)

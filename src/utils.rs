@@ -4,10 +4,9 @@ use dialoguer::{theme::ColorfulTheme, FuzzySelect};
 use figlet_rs::FIGfont;
 use ron::ser::PrettyConfig;
 
+use serde::{Deserialize, Serialize};
 use std::{fmt::Display, fs, path::PathBuf};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-
-use serde::{Deserialize, Serialize};
 
 use colored::*;
 
@@ -44,8 +43,16 @@ pub struct BedrustConfig {
     pub default_model: Option<ArgModels>,
     // FIX: Implement a better way for configuration defaults
     // for now if there is no configuration line use true
-    #[serde(default="_default_true")]
+    #[serde(default = "_default_true")]
     pub show_banner: bool,
+    pub inference_params: InferenceParams,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct InferenceParams {
+    pub temperature: f32,
+    pub max_tokens: i32,
+    pub top_p: f32,
 }
 
 #[derive(clap::ValueEnum, Clone, Serialize, Deserialize, Debug, Copy)]
@@ -62,6 +69,7 @@ pub enum ArgModels {
     Mixtral8x7bInstruct,
     Mistral7bInstruct,
     MistralLarge,
+    MistralLarge2,
 }
 
 impl Display for ArgModels {
@@ -85,13 +93,16 @@ impl ArgModels {
             ArgModels::Mixtral8x7bInstruct => "mistral.mixtral-8x7b-instruct-v0:1",
             ArgModels::Mistral7bInstruct => "mistral.mistral-7b-instruct-v0:2",
             ArgModels::MistralLarge => "mistral.mistral-large-2402-v1:0",
+            ArgModels::MistralLarge2 => "mistral.mistral-large-2407-v1:0",
         }
     }
 }
 // ######################################## END ARGUMENT PARSING
 // ######################################## CONST FUNCTIONS
 // Used to set default values to struct fields during serialization
-const fn _default_true() -> bool { true }
+const fn _default_true() -> bool {
+    true
+}
 // ######################################## END CONST FUNCTIONS
 
 pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
@@ -118,7 +129,10 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
         "{}",
         "Currently supported chat commands: ".truecolor(83, 82, 82)
     );
-    println!("{}", "/c\t - Clear current chat history".truecolor(255, 229, 153));
+    println!(
+        "{}",
+        "/c\t - Clear current chat history".truecolor(255, 229, 153)
+    );
     println!("{}", "/q\t - Quit".truecolor(255, 229, 153));
     println!("{}", "----------------------------------------".cyan());
     println!();
@@ -180,7 +194,7 @@ pub fn prompt_for_model_selection_opt() -> Result<Option<ArgModels>, anyhow::Err
         .with_prompt("Select a default model to use press <enter> to skip")
         .items(model_list)
         .interact_opt()?;
-    Ok(idx.map(|idx|model_list[idx]))
+    Ok(idx.map(|idx| model_list[idx]))
 }
 
 // function that creates the configuration files during the `init` command
@@ -205,15 +219,6 @@ pub fn initialize_config() -> Result<(), anyhow::Error> {
         bedrust_config_file_path
     );
     println!("This file is used to store configuration items for the bedrust application.");
-
-    let model_config_file_path = config_dir.join(constants::MODEL_CONFIG_FILE_NAME);
-    let model_config_content = constants::MODEL_CONFIG_FILE.to_string();
-    fs::write(&model_config_file_path, model_config_content)?;
-    println!(
-        "⏳| Model configuration file created at: {:?}",
-        model_config_file_path
-    );
-    println!("This file is used to store default model parameters such as max tokens, temperature, top_p, top_k, etc.");
 
     let figlet_font_file_path = config_dir.join(constants::FIGLET_FONT_FILENAME);
     let figlet_font_content = constants::FIGLET_FONT;
