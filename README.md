@@ -13,7 +13,7 @@ Currently supporting the following models:
 - Cohere Command
 - Jurrasic 2 Ultra
 - Titan Text Express V1
-- Mistral AI models (Mixtral, Mistral7b and Mistral Large)
+- Mistral AI models (Mixtral, Mistral7b and Mistral Large 1 and 2)
 
 ## Getting Started
 
@@ -68,7 +68,7 @@ cargo install bedrust
 ```
 This will install the compiled binary into your `$CARGO_HOME/bin` directory. If you have the `$PATH` set up correctly you should be able to run it now. But before you do ...
 
-Let's initialize the configuration. Because **bedrust** uses two configuration files (`bedrust_config.ron` and `model_config.ron`) they (along with some other resources) need to be stored inside of your `$HOME/.config/bedrust` directory. *Now*, you can do this manually, but we have a feature to do it for you. Just run:
+Let's initialize the configuration. Because **bedrust** uses a configuration file (`bedrust_config.ron`) it (along with some other resources) needs to be stored inside of your `$HOME/.config/bedrust` directory. *Now*, you can do this manually, but we have a feature to do it for you. Just run:
 ```
 bedrust --init
 ```
@@ -87,11 +87,11 @@ Or if you wish to use the default model (the one defined during `--init` / in yo
 Usage: bedrust [OPTIONS]
 
 Options:
-      --init                 
-  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, claude-v21, claude-v3-sonnet, claude-v3-haiku, claude-v35-sonnet, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct, mistral-large]
-  -c, --caption <CAPTION>    
-  -s, --source <SOURCE>      
-  -x                         
+      --init
+  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, claude-v21, claude-v3-sonnet, claude-v3-haiku, claude-v35-sonnet, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct, mistral-large, mistral-large2]
+  -c, --caption <CAPTION>
+  -s, --source <SOURCE>
+  -x
   -h, --help                 Print help
   -V, --version              Print version
 ```
@@ -144,10 +144,9 @@ bedrust --source ~/workspace/repos/your_code_repo
 
 ## Configuration files 
 
-There are two important configuration files that ship with **bedrust**:
+There is one important configuration file that ship with **bedrust**:
 
 - `bedrust_config.ron` - stores configuration parameters related to the application itself.
-- `model_config.ron` - stores configuration parameters related to the LLMs. Things like max tokens, temperature, top_p, top_k, etc.
 
 They *need* to be in your `$HOME/.config/bedrust/` directory. The application will warn you if they do not exist, and fail to run. You can create them automatically by running `bedrust --init`
 

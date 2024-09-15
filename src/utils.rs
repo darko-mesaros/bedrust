@@ -4,9 +4,9 @@ use dialoguer::{theme::ColorfulTheme, FuzzySelect};
 use figlet_rs::FIGfont;
 use ron::ser::PrettyConfig;
 
+use serde::{Deserialize, Serialize};
 use std::{fmt::Display, fs, path::PathBuf};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-use serde::{Deserialize, Serialize};
 
 use colored::*;
 
@@ -43,9 +43,9 @@ pub struct BedrustConfig {
     pub default_model: Option<ArgModels>,
     // FIX: Implement a better way for configuration defaults
     // for now if there is no configuration line use true
-    #[serde(default="_default_true")]
+    #[serde(default = "_default_true")]
     pub show_banner: bool,
-    pub inference_params: InferenceParams
+    pub inference_params: InferenceParams,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -69,7 +69,7 @@ pub enum ArgModels {
     Mixtral8x7bInstruct,
     Mistral7bInstruct,
     MistralLarge,
-    MistralLarge2
+    MistralLarge2,
 }
 
 impl Display for ArgModels {
@@ -93,14 +93,16 @@ impl ArgModels {
             ArgModels::Mixtral8x7bInstruct => "mistral.mixtral-8x7b-instruct-v0:1",
             ArgModels::Mistral7bInstruct => "mistral.mistral-7b-instruct-v0:2",
             ArgModels::MistralLarge => "mistral.mistral-large-2402-v1:0",
-            ArgModels::MistralLarge2 => "mistral.mistral-large-2407-v1:0"
+            ArgModels::MistralLarge2 => "mistral.mistral-large-2407-v1:0",
         }
     }
 }
 // ######################################## END ARGUMENT PARSING
 // ######################################## CONST FUNCTIONS
 // Used to set default values to struct fields during serialization
-const fn _default_true() -> bool { true }
+const fn _default_true() -> bool {
+    true
+}
 // ######################################## END CONST FUNCTIONS
 
 pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
@@ -127,7 +129,10 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
         "{}",
         "Currently supported chat commands: ".truecolor(83, 82, 82)
     );
-    println!("{}", "/c\t - Clear current chat history".truecolor(255, 229, 153));
+    println!(
+        "{}",
+        "/c\t - Clear current chat history".truecolor(255, 229, 153)
+    );
     println!("{}", "/q\t - Quit".truecolor(255, 229, 153));
     println!("{}", "----------------------------------------".cyan());
     println!();
@@ -189,7 +194,7 @@ pub fn prompt_for_model_selection_opt() -> Result<Option<ArgModels>, anyhow::Err
         .with_prompt("Select a default model to use press <enter> to skip")
         .items(model_list)
         .interact_opt()?;
-    Ok(idx.map(|idx|model_list[idx]))
+    Ok(idx.map(|idx| model_list[idx]))
 }
 
 // function that creates the configuration files during the `init` command

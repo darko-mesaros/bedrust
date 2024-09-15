@@ -15,9 +15,8 @@ Please prepare to analyze the provided code, keeping in mind the following objec
 Here are the files:
 "#;
 
-
 // NOTE: When using Claude you can use the Agent prompt to just finalize the array - Thank you
-// Thiago <3 
+// Thiago <3
 // This means I can start an array and it should finish it for me
 pub static PROJECT_GUESS_PROMPT: &str = r#"
 You are helping me figure out what kind of software development projects people are working on. To figure this out, you will look at a file structure of a directory and return to me an array of important file names related to that project type. You will only respond with that array and nothing else. Only return file types that are text files (do not return file types that are images or binaries)
@@ -32,53 +31,45 @@ Give me an array of important files for a project type that has the following di
 // FIX: the model id is hardcoded, we need to make this configurable
 pub static PROJECT_GUESS_MODEL_ID: &str = "anthropic.claude-3-sonnet-20240229-v1:0";
 pub static CODE_IGNORE_DIRS: &[&str] = &[
-        // Rust
-        "target",
-
-        // JavaScript/TypeScript
-        "node_modules",
-        "dist",
-        "build",
-
-        // Python
-        "__pycache__",
-        ".tox",
-        "venv",
-        ".pytest_cache",
-
-        // Java
-        "target",
-        "bin",
-        ".gradle",
-        ".mvn",
-
-        // C/C++
-        "obj",
-        "out",
-
-        // Go
-        "pkg",
-
-        // Ruby
-        ".bundle",
-        "vendor/bundle",
-
-        // Django
-        "staticfiles",
-        "media",
-
-        // General
-        ".git",
-        ".svn",
-        ".hg",
-        ".idea",
-        ".vscode",
-        ".DS_Store",
-        "logs",
-        "tmp",
-        "cache",
-        ".terraform",
-    ];
+    // Rust
+    "target",
+    // JavaScript/TypeScript
+    "node_modules",
+    "dist",
+    "build",
+    // Python
+    "__pycache__",
+    ".tox",
+    "venv",
+    ".pytest_cache",
+    // Java
+    "target",
+    "bin",
+    ".gradle",
+    ".mvn",
+    // C/C++
+    "obj",
+    "out",
+    // Go
+    "pkg",
+    // Ruby
+    ".bundle",
+    "vendor/bundle",
+    // Django
+    "staticfiles",
+    "media",
+    // General
+    ".git",
+    ".svn",
+    ".hg",
+    ".idea",
+    ".vscode",
+    ".DS_Store",
+    "logs",
+    "tmp",
+    "cache",
+    ".terraform",
+];
 
 // CONFIGURATION FILES
 pub static CONFIG_DIR_NAME: &str = "bedrust";

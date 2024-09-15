@@ -2,7 +2,10 @@ pub mod converse;
 pub mod converse_stream;
 
 use anyhow::{anyhow, Result};
-use aws_sdk_bedrock::{self, types::{FoundationModelDetails, ModelModality}};
+use aws_sdk_bedrock::{
+    self,
+    types::{FoundationModelDetails, ModelModality},
+};
 
 pub enum ModelFeatures {
     Streaming,
@@ -29,7 +32,7 @@ pub async fn check_for_streaming(
 pub async fn check_model_features(
     m: &str,
     c: &aws_sdk_bedrock::Client,
-    feature: ModelFeatures
+    feature: ModelFeatures,
 ) -> Result<bool, anyhow::Error> {
     let call = c.get_foundation_model().model_identifier(m);
     let res = call.send().await;
@@ -39,23 +42,19 @@ pub async fn check_model_features(
         .clone();
 
     match feature {
-        ModelFeatures::Images => {
-            match model_details.input_modalities{
-                Some(o) => {
-                    if o.contains(&ModelModality::Image) {
-                        Ok(true)
-                    } else {
-                        Ok(false)
-                    }
+        ModelFeatures::Images => match model_details.input_modalities {
+            Some(o) => {
+                if o.contains(&ModelModality::Image) {
+                    Ok(true)
+                } else {
+                    Ok(false)
                 }
-                None => Ok(false),
             }
-        }
-        ModelFeatures::Streaming => {
-            match model_details.response_streaming_supported {
-                Some(o) => Ok(o),
-                None => Ok(false),
-            }
-        }
+            None => Ok(false),
+        },
+        ModelFeatures::Streaming => match model_details.response_streaming_supported {
+            Some(o) => Ok(o),
+            None => Ok(false),
+        },
     }
 }

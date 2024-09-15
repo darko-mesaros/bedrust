@@ -1,8 +1,11 @@
 use aws_sdk_bedrockruntime::{
     error::ProvideErrorMetadata,
-    operation::converse_stream::ConverseStreamError, types::{
-    error::ConverseStreamOutputError, ContentBlock, ConversationRole, ConverseStreamOutput as ConverseStreamOutputType, InferenceConfiguration, Message
-}};
+    operation::converse_stream::ConverseStreamError,
+    types::{
+        error::ConverseStreamOutputError, ContentBlock, ConversationRole,
+        ConverseStreamOutput as ConverseStreamOutputType, InferenceConfiguration, Message,
+    },
+};
 
 // Converse Error type
 //
@@ -60,9 +63,7 @@ fn get_converse_output_text(
 ) -> Result<String, BedrockConverseStreamError> {
     Ok(match output {
         ConverseStreamOutputType::ContentBlockDelta(event) => match event.delta() {
-            Some(delta) => delta
-                .as_text().cloned()
-                .unwrap_or_else(|_| "".into()),
+            Some(delta) => delta.as_text().cloned().unwrap_or_else(|_| "".into()),
             None => "".into(),
         },
         _ => "".into(),
@@ -73,9 +74,8 @@ pub async fn call_converse_stream(
     bc: &aws_sdk_bedrockruntime::Client,
     model_id: String,
     user_message: &str,
-    inference_parameters: InferenceConfiguration
+    inference_parameters: InferenceConfiguration,
 ) -> Result<String, BedrockConverseStreamError> {
-
     let response = bc
         .converse_stream()
         .model_id(model_id)
@@ -93,7 +93,7 @@ pub async fn call_converse_stream(
     let mut stream = match response {
         Ok(output) => Ok(output.stream),
         Err(e) => Err(BedrockConverseStreamError::from(
-                e.as_service_error().unwrap(),
+            e.as_service_error().unwrap(),
         )),
     }?;
 
@@ -115,7 +115,7 @@ pub async fn call_converse_stream(
                 .as_service_error()
                 .map(BedrockConverseStreamError::from)
                 .unwrap_or(BedrockConverseStreamError(
-                        "Unknown error recieving stream".into(),
+                    "Unknown error recieving stream".into(),
                 ))),
         }?
     }

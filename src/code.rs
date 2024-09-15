@@ -1,10 +1,10 @@
-use std::{collections::HashMap, path::PathBuf};
-use std::fs;
-use anyhow::anyhow;
-use aws_sdk_bedrockruntime::types::{ContentBlock, InferenceConfiguration};
 use crate::constants;
 use crate::models::converse::call_converse;
+use anyhow::anyhow;
+use aws_sdk_bedrockruntime::types::{ContentBlock, InferenceConfiguration};
 use ignore::DirEntry;
+use std::fs;
+use std::{collections::HashMap, path::PathBuf};
 
 // NOTE:
 // A few things to note here:
@@ -16,7 +16,10 @@ use ignore::DirEntry;
 //   - Project type we assumed / file extensions being sent over
 //
 
-pub async fn code_chat(p: PathBuf, client: &aws_sdk_bedrockruntime::Client ) -> Result<String, anyhow::Error> {
+pub async fn code_chat(
+    p: PathBuf,
+    client: &aws_sdk_bedrockruntime::Client,
+) -> Result<String, anyhow::Error> {
     // === DEFAULT INFERENCE PARAMETERS ===
     // NOTE: Not sure if this is the best way to store this. Maybe also as part of a configuraiton
     // run
@@ -31,16 +34,18 @@ pub async fn code_chat(p: PathBuf, client: &aws_sdk_bedrockruntime::Client ) -> 
     // FIX: Seems to return hidden files too
     let all_files = get_all_files(&p, None, 3)?;
     let extn = guess_code_type(all_files, client, inference_parameters).await?;
-    
+
     // get all files with the extensions from above, and go 2 levels deep
     let files = get_all_files(&p, Some(extn), 3)?;
     let contents = get_file_contents(files)?;
 
     let mut formatted_contents = String::new();
     for (filename, content) in &contents {
-        let string: String = format!("\n<filename>{}</filename>\n<file_contents>{}\n</file_contents>", 
-                filename.to_string_lossy(), 
-                content);
+        let string: String = format!(
+            "\n<filename>{}</filename>\n<file_contents>{}\n</file_contents>",
+            filename.to_string_lossy(),
+            content
+        );
         formatted_contents.push_str(string.as_str())
     }
 
@@ -49,19 +54,24 @@ pub async fn code_chat(p: PathBuf, client: &aws_sdk_bedrockruntime::Client ) -> 
 
 // a simple function to check if a file name is hidden (has a . in front)
 fn is_hidden(entry: &DirEntry) -> bool {
-    entry.file_name()
-         .to_str()
-         .map(|s| s.starts_with('.'))
-         .unwrap_or(false)
+    entry
+        .file_name()
+        .to_str()
+        .map(|s| s.starts_with('.'))
+        .unwrap_or(false)
 }
 
 // gets all files of a give filename in a given dir up to a certain depth
-fn get_all_files(p: &PathBuf, ext: Option<Vec<String>>, l: u8) -> Result<Vec<PathBuf>, anyhow::Error> {
+fn get_all_files(
+    p: &PathBuf,
+    ext: Option<Vec<String>>,
+    l: u8,
+) -> Result<Vec<PathBuf>, anyhow::Error> {
     if !p.exists() {
         return Err(anyhow!("🔴 | The specified path does not exist. Sorry!"));
     }
 
-    let mut builder= ignore::WalkBuilder::new(p);
+    let mut builder = ignore::WalkBuilder::new(p);
     builder.max_depth(Some(l as usize));
     builder.hidden(false);
 
@@ -72,7 +82,9 @@ fn get_all_files(p: &PathBuf, ext: Option<Vec<String>>, l: u8) -> Result<Vec<Pat
         .filter(|entry| {
             let is_file = entry.file_type().map_or(false, |ft| ft.is_file());
             let matches_extension = ext.as_ref().map_or(true, |extensions| {
-                entry.path().extension()
+                entry
+                    .path()
+                    .extension()
                     .and_then(|ext| ext.to_str())
                     .map_or(false, |ext| extensions.contains(&ext.to_string()))
             });
@@ -86,7 +98,11 @@ fn get_all_files(p: &PathBuf, ext: Option<Vec<String>>, l: u8) -> Result<Vec<Pat
     Ok(files)
 }
 
-async fn guess_code_type(files: Vec<PathBuf>, client: &aws_sdk_bedrockruntime::Client, inf_param: InferenceConfiguration) -> Result<Vec<String>, anyhow::Error> {
+async fn guess_code_type(
+    files: Vec<PathBuf>,
+    client: &aws_sdk_bedrockruntime::Client,
+    inf_param: InferenceConfiguration,
+) -> Result<Vec<String>, anyhow::Error> {
     // question
     let mut query = String::new();
     query.push_str(constants::PROJECT_GUESS_PROMPT);
@@ -110,7 +126,9 @@ async fn guess_code_type(files: Vec<PathBuf>, client: &aws_sdk_bedrockruntime::C
             inf_param.clone(),
             content.clone(),
             None,
-        ).await {
+        )
+        .await
+        {
             Ok(response) => {
                 // check if the response is a valid array
                 match serde_json::from_str::<Vec<String>>(&response) {
@@ -129,7 +147,10 @@ async fn guess_code_type(files: Vec<PathBuf>, client: &aws_sdk_bedrockruntime::C
         }
         // if we have retried max_retries times, return an error
         if retry_count >= max_retries {
-            return Err(anyhow!("Failed to get a response after {} retries", max_retries));
+            return Err(anyhow!(
+                "Failed to get a response after {} retries",
+                max_retries
+            ));
         }
         // sleep for 2^retry_count seconds - exponential backoff
         tokio::time::sleep(std::time::Duration::from_secs(2u64.pow(retry_count))).await;
@@ -139,14 +160,10 @@ async fn guess_code_type(files: Vec<PathBuf>, client: &aws_sdk_bedrockruntime::C
 }
 
 fn get_file_contents(files: Vec<PathBuf>) -> Result<HashMap<PathBuf, String>, anyhow::Error> {
-
     let mut code = HashMap::new();
-    for file in files { 
+    for file in files {
         let contents = fs::read_to_string(&file).unwrap();
-        code.insert(
-            file,
-            contents,
-        );
+        code.insert(file, contents);
     }
 
     Ok(code)

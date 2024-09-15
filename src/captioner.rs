@@ -4,14 +4,15 @@ use std::{fs, io::Read, path::PathBuf};
 
 use anyhow::anyhow;
 use aws_sdk_bedrockruntime::primitives::Blob;
-use aws_sdk_bedrockruntime::types::{ContentBlock, ImageBlock, ImageFormat, ImageSource, InferenceConfiguration, SystemContentBlock};
+use aws_sdk_bedrockruntime::types::{
+    ContentBlock, ImageBlock, ImageFormat, ImageSource, InferenceConfiguration, SystemContentBlock,
+};
 
 use indicatif::{ProgressBar, ProgressStyle};
 use quick_xml::se;
 use serde::Serialize;
 
 use crate::models::converse::call_converse;
-
 
 #[derive(Debug, Serialize)]
 pub struct Image {
@@ -22,7 +23,7 @@ pub struct Image {
     #[serde(skip_serializing)]
     //pub base64: String,
     pub base64: Vec<u8>,
-    pub caption: Option<String>
+    pub caption: Option<String>,
 }
 
 pub enum OutputFormat {
@@ -87,7 +88,6 @@ pub async fn caption_image(
     runtime_client: &aws_sdk_bedrockruntime::Client,
     _bedrock_client: &aws_sdk_bedrock::Client,
 ) -> Result<(), anyhow::Error> {
-    
     // Needs to be hardcoded for images
     let inference_parameters: InferenceConfiguration = InferenceConfiguration::builder()
         .max_tokens(2048)
@@ -96,7 +96,7 @@ pub async fn caption_image(
         .build();
 
     // FIX: Remove the clone
-    let system_prompt = Some(vec!(SystemContentBlock::Text(prompt.to_owned())));
+    let system_prompt = Some(vec![SystemContentBlock::Text(prompt.to_owned())]);
 
     // progress bar shenanigans
     let progress_bar = ProgressBar::new(i.len().try_into()?);
@@ -115,14 +115,14 @@ pub async fn caption_image(
         //let imagesrc: ImageSource = ImageSource::Bytes(image.base64.to_blob());
         let imagesrc: ImageSource = ImageSource::Bytes(
             // FIX: Try to remove the clone
-            Blob::new(image.base64.clone())
-            );
+            Blob::new(image.base64.clone()),
+        );
 
         let image_block = ImageBlock::builder()
             .source(imagesrc)
             .format(ImageFormat::from_str(image.extension.as_str())?)
             .build()?;
-            
+
         let content = ContentBlock::Image(image_block);
         progress_bar.set_message(message);
         // let caption = ask_bedrock(
@@ -135,14 +135,15 @@ pub async fn caption_image(
         // )
         // .await?;
         let caption = call_converse(
-            runtime_client, 
-            model.to_string(), 
+            runtime_client,
+            model.to_string(),
             // FIX: Avoid the clone
-            inference_parameters.clone(), 
+            inference_parameters.clone(),
             content,
             // FIX: Avoid the clone
-            system_prompt.clone()
-            ).await?;
+            system_prompt.clone(),
+        )
+        .await?;
         progress_bar.inc(1);
         image.caption = Some(caption);
     }
@@ -181,9 +182,9 @@ pub fn write_captions(
 mod tests {
     use super::*;
     use crate::utils::load_bedrust_config;
+    use base64::{engine::general_purpose, Engine as _};
     use image::{Rgb, RgbImage};
     use rand::distributions::{Alphanumeric, DistString};
-    use base64::{engine::general_purpose, Engine as _};
 
     // list all files in the directory
     #[test]
@@ -248,5 +249,4 @@ mod tests {
         // Clean up: remove the test image file
         fs::remove_file(image_path).unwrap();
     }
-
 }

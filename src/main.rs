@@ -20,7 +20,7 @@ use clap::Parser;
 use bedrust::code::code_chat;
 use bedrust::constants;
 use bedrust::models::converse_stream::call_converse_stream;
-use bedrust::models::{ModelFeatures, check_model_features};
+use bedrust::models::{check_model_features, ModelFeatures};
 
 // TODO:
 // So far I've implemented the converse API for general purpose chat and the code chat.
@@ -93,13 +93,12 @@ async fn main() -> Result<()> {
     let bedrock_client = aws_sdk_bedrock::Client::new(&config);
 
     //let question = "Which songs are listed in the youtube video 'evolution of dance'?";
-    let model_id = arguments
-        .model_id
-        .or(bedrust_config.default_model);
+    let model_id = arguments.model_id.or(bedrust_config.default_model);
     let model_id = match model_id {
         Some(model_id) => model_id,
-        None => prompt_for_model_selection()?
-    }.to_str();
+        None => prompt_for_model_selection()?,
+    }
+    .to_str();
 
     // === DEFAULT INFERENCE PARAMETERS ===
     let inference_parameters = InferenceConfiguration::builder()
@@ -121,7 +120,8 @@ async fn main() -> Result<()> {
                             .caption
                             .ok_or_else(|| anyhow!("No path specified"))?;
                         println!("⌛ | Processing images in: {:?}", &path);
-                        let files = list_files_in_path_by_extension(path, bedrust_config.supported_images)?;
+                        let files =
+                            list_files_in_path_by_extension(path, bedrust_config.supported_images)?;
                         println!("🔎 | Found {:?} images in path.", &files.len());
 
                         let mut images: Vec<Image> = Vec::new();
@@ -163,32 +163,37 @@ async fn main() -> Result<()> {
                         eprintln!("The current model selected does not support Images. Please consider using one that does.")
                     }
                 }
-            } 
-            Err(e) => eprintln!("Unable to determine model features: {}", e)
+            }
+            Err(e) => eprintln!("Unable to determine model features: {}", e),
         };
     } else {
         // default run
         utils::hello_header("Bedrust")?;
 
         // BETA: SOURCE READING
-        let mut conversation_history =  if arguments.source.is_some() {
+        let mut conversation_history = if arguments.source.is_some() {
             println!("----------------------------------------");
             print_warning("⚠ THIS IS A BETA FEATURE ⚠");
             println!("----------------------------------------");
             println!("💾 | Ooh, it Seems we are talking about code today!");
-            println!("💾 | I was given this dir to review: {:?}", arguments.source.clone().unwrap().into_os_string());
+            println!(
+                "💾 | I was given this dir to review: {:?}",
+                arguments.source.clone().unwrap().into_os_string()
+            );
             println!("----------------------------------------");
             let mut convo = String::new();
             convo.push_str(constants::CODE_CHAT_PROMPT);
 
-            let code = code_chat(arguments.source.clone().unwrap(), &bedrock_runtime_client).await?;
+            let code =
+                code_chat(arguments.source.clone().unwrap(), &bedrock_runtime_client).await?;
             println!("----------------------------------------");
             print_warning("⚠ THIS IS A BETA FEATURE ⚠");
 
             // Return this conversation
             convo.push_str(code.as_str());
             convo
-        } else { // We are not looking at code
+        } else {
+            // We are not looking at code
             // Just return an empty string
             String::new()
         };
@@ -231,7 +236,7 @@ async fn main() -> Result<()> {
             println!("----------------------------------------");
 
             let streamresp = call_converse_stream(
-                &bedrock_runtime_client, 
+                &bedrock_runtime_client,
                 model_id.to_string(),
                 &conversation_history.to_string(),
                 inference_parameters.clone(),

@@ -1,11 +1,7 @@
 use aws_sdk_bedrockruntime::{
-    operation::converse::{
-        ConverseError, 
-        ConverseOutput
-    }, 
-    types::{
-    ContentBlock, ConversationRole, InferenceConfiguration, Message, SystemContentBlock
-}};
+    operation::converse::{ConverseError, ConverseOutput},
+    types::{ContentBlock, ConversationRole, InferenceConfiguration, Message, SystemContentBlock},
+};
 
 // Converse Error type
 //
@@ -57,10 +53,8 @@ pub async fn call_converse(
     model_id: String,
     inference_parameters: InferenceConfiguration,
     content: ContentBlock,
-    system: Option<Vec<SystemContentBlock>>
+    system: Option<Vec<SystemContentBlock>>,
 ) -> Result<String, BedrockConverseError> {
-
-
     let response = bc
         .converse()
         .model_id(model_id)
@@ -88,6 +82,6 @@ pub async fn call_converse(
         Err(e) => Err(e
             .as_service_error()
             .map(BedrockConverseError::from)
-            .unwrap_or_else(||BedrockConverseError("Unknown service error".into()))),
+            .unwrap_or_else(|| BedrockConverseError("Unknown service error".into()))),
     }
 }
