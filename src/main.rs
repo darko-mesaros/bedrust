@@ -229,18 +229,6 @@ async fn main() -> Result<()> {
             println!("----------------------------------------");
             println!("☎️  | Calling Model: {}", &model_id);
             println!("----------------------------------------");
-            // let response = ask_bedrock(
-            //     //&question.to_string(),
-            //     &conversation_history.to_string(),
-            //     None,
-            //     model_id,
-            //     RunType::Standard,
-            //     &bedrock_runtime_client,
-            //     &bedrock_client,
-            // )
-            // .await?;
-            // conversation_history.push_str(&response);
-            // conversation_history.push('\n');
 
             let streamresp = call_converse_stream(
                 &bedrock_runtime_client, 

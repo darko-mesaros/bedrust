@@ -4,16 +4,12 @@ use std::{fs, io::Read, path::PathBuf};
 
 use anyhow::anyhow;
 use aws_sdk_bedrockruntime::primitives::Blob;
-use aws_sdk_bedrockruntime::types::builders::ImageBlockBuilder;
 use aws_sdk_bedrockruntime::types::{ContentBlock, ImageBlock, ImageFormat, ImageSource, InferenceConfiguration, SystemContentBlock};
-use base64::{engine::general_purpose, Engine as _};
 
 use indicatif::{ProgressBar, ProgressStyle};
 use quick_xml::se;
 use serde::Serialize;
 
-use crate::{ask_bedrock, call_bedrock};
-use crate::RunType;
 use crate::models::converse::call_converse;
 
 
@@ -89,7 +85,7 @@ pub async fn caption_image(
     model: &str,
     prompt: &str,
     runtime_client: &aws_sdk_bedrockruntime::Client,
-    bedrock_client: &aws_sdk_bedrock::Client,
+    _bedrock_client: &aws_sdk_bedrock::Client,
 ) -> Result<(), anyhow::Error> {
     
     // Needs to be hardcoded for images
@@ -187,6 +183,7 @@ mod tests {
     use crate::utils::load_bedrust_config;
     use image::{Rgb, RgbImage};
     use rand::distributions::{Alphanumeric, DistString};
+    use base64::{engine::general_purpose, Engine as _};
 
     // list all files in the directory
     #[test]

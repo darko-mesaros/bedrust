@@ -6,7 +6,6 @@ use ron::ser::PrettyConfig;
 
 use std::{fmt::Display, fs, path::PathBuf};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-
 use serde::{Deserialize, Serialize};
 
 use colored::*;
@@ -215,15 +214,6 @@ pub fn initialize_config() -> Result<(), anyhow::Error> {
         bedrust_config_file_path
     );
     println!("This file is used to store configuration items for the bedrust application.");
-
-    let model_config_file_path = config_dir.join(constants::MODEL_CONFIG_FILE_NAME);
-    let model_config_content = constants::MODEL_CONFIG_FILE.to_string();
-    fs::write(&model_config_file_path, model_config_content)?;
-    println!(
-        "⏳| Model configuration file created at: {:?}",
-        model_config_file_path
-    );
-    println!("This file is used to store default model parameters such as max tokens, temperature, top_p, top_k, etc.");
 
     let figlet_font_file_path = config_dir.join(constants::FIGLET_FONT_FILENAME);
     let figlet_font_content = constants::FIGLET_FONT;
