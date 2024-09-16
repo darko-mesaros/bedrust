@@ -11,6 +11,7 @@ use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use colored::*;
 
 use dirs::home_dir;
+use chrono;
 
 use crate::constants;
 
@@ -133,6 +134,8 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
         "{}",
         "/c\t - Clear current chat history".truecolor(255, 229, 153)
     );
+    println!("{}", "/s\t - Save chat history".truecolor(255, 229, 153));
+    println!("{}", "/r\t - Recall and load a chat history".truecolor(255, 229, 153));
     println!("{}", "/q\t - Quit".truecolor(255, 229, 153));
     println!("{}", "----------------------------------------".cyan());
     println!();
@@ -230,4 +233,48 @@ pub fn initialize_config() -> Result<(), anyhow::Error> {
 
     println!("✅ | Bedrust configuration has been initialized in ~/.config/bedrust. You may now use it as normal.");
     Ok(())
+}
+
+
+// TODO: Name the chat histories somehow
+pub fn save_chat_history(conversation_history: &str) -> Result<String, anyhow::Error> {
+    let home_dir = home_dir().expect("Failed to get HOME directory");
+    let save_dir = home_dir.join(format!(".config/{}/chats", constants::CONFIG_DIR_NAME));
+    fs::create_dir_all(&save_dir)?;
+
+    let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
+    let filename = format!("chat_{}.txt", timestamp);
+    let file_path = save_dir.join(&filename);
+
+    fs::write(&file_path, conversation_history)?;
+
+    Ok(filename)
+}
+
+pub fn load_chat_history(filename: &str) -> Result<String, anyhow::Error> {
+    let home_dir = home_dir().expect("Failed to get HOME directory");
+    let chat_dir = home_dir.join(format!(".config/{}/chats", constants::CONFIG_DIR_NAME));
+    let file_path = chat_dir.join(filename);
+
+    let content = fs::read_to_string(file_path)?;
+    Ok(content)
+}
+
+pub fn list_chat_histories() -> Result<Vec<String>, anyhow::Error> {
+    let home_dir = home_dir().expect("Failed to get HOME directory");
+    let chat_dir = home_dir.join(format!(".config/{}/chats", constants::CONFIG_DIR_NAME));
+    
+    let mut chat_files = Vec::new();
+    for entry in fs::read_dir(chat_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("txt") {
+            if let Some(filename) = path.file_name().and_then(|s| s.to_str()) {
+                chat_files.push(filename.to_string());
+            }
+        }
+    }
+    
+    chat_files.sort_by(|a, b| b.cmp(a));  // Sort in descending order (newest first)
+    Ok(chat_files)
 }

@@ -22,6 +22,7 @@ aws-sdk-bedrock = "1.49.0"
 aws-sdk-bedrockruntime = "1.49.0"
 aws-types = "1.3.3"
 base64 = "0.22.0"
+chrono = "0.4.38"
 clap = { version = "4.5.0", features = ["derive"] }
 colored = "2.1.0"
 dialoguer = { version = "0.11.0", default-features = false, features = ["fuzzy-select", "completion"] }
