@@ -58,6 +58,11 @@ pub struct InferenceParams {
 #[derive(clap::ValueEnum, Clone, Serialize, Deserialize, Debug, Copy)]
 pub enum ArgModels {
     Llama270b,
+    Llama370b,
+    Llama38b,
+    Llama31405b,
+    Llama3170b,
+    Llama318b,
     CohereCommand,
     ClaudeV2,
     ClaudeV21,
@@ -87,6 +92,11 @@ impl ArgModels {
             ArgModels::ClaudeV3Sonnet => "anthropic.claude-3-sonnet-20240229-v1:0",
             ArgModels::ClaudeV35Sonnet => "anthropic.claude-3-5-sonnet-20240620-v1:0",
             ArgModels::Llama270b => "meta.llama2-70b-chat-v1",
+            ArgModels::Llama370b => "meta.llama3-70b-instruct-v1:0",
+            ArgModels::Llama38b => "meta.llama3-8b-instruct-v1:0",
+            ArgModels::Llama31405b => "meta.llama3-1-405b-instruct-v1:0",
+            ArgModels::Llama3170b => "meta.llama3-1-70b-instruct-v1:0",
+            ArgModels::Llama318b => "meta.llama3-1-8b-instruct-v1:0",
             ArgModels::CohereCommand => "cohere.command-text-v14",
             ArgModels::Jurrasic2Ultra => "ai21.j2-ultra-v1",
             ArgModels::TitanTextExpressV1 => "amazon.titan-text-express-v1",
