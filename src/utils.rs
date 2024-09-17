@@ -22,6 +22,13 @@ use dirs::home_dir;
 
 use crate::constants;
 
+// TODO:
+// - Print the summary when recalling the chat
+// - Consider other locations for saving the conversations
+// - Produce the print with some syntax highlighting
+// - Distinguish between user and computer input in the json
+// - Run checks for model support for the hardcoded models
+
 // ######################################## ARGUMENT PARSING
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
