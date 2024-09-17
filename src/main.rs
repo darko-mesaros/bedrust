@@ -225,17 +225,27 @@ async fn main() -> Result<()> {
                 current_file = None;
                 continue;
             // SAVING CHAT HISTORY
-            // TODO: Implement a feature that will distinguish between user input and LLM output 
+            // TODO: Implement a feature that will distinguish between user input and LLM output
             // this will likely need to be handled in the way I handle conversation_history as I
             // just store everything as raw there.
             } else if question == "/s" {
                 // if there is a current_file set we keep writing to that file
                 let filename = if let Some(ref file) = current_file {
-                    save_chat_history(&conversation_history, Some(file), title.clone(), &bedrock_runtime_client)
-                        .await?
+                    save_chat_history(
+                        &conversation_history,
+                        Some(file),
+                        title.clone(),
+                        &bedrock_runtime_client,
+                    )
+                    .await?
                 } else {
-                    match save_chat_history(&conversation_history, None, None, &bedrock_runtime_client)
-                        .await
+                    match save_chat_history(
+                        &conversation_history,
+                        None,
+                        None,
+                        &bedrock_runtime_client,
+                    )
+                    .await
                     {
                         Ok(name) => {
                             current_file = Some(name.clone());

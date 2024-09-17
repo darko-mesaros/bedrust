@@ -7,7 +7,12 @@ use figlet_rs::FIGfont;
 use ron::ser::PrettyConfig;
 
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, fs, io::{self, Write}, path::PathBuf};
+use std::{
+    fmt::Display,
+    fs,
+    io::{self, Write},
+    path::PathBuf,
+};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 use colored::*;
@@ -136,7 +141,10 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
         "{}",
         "/c\t - Clear current chat history".truecolor(255, 229, 153)
     );
-    println!("{}", "/s\t - (BETA) Save chat history".truecolor(255, 229, 153));
+    println!(
+        "{}",
+        "/s\t - (BETA) Save chat history".truecolor(255, 229, 153)
+    );
     println!(
         "{}",
         "/r\t - (BETA) Recall and load a chat history".truecolor(255, 229, 153)
@@ -369,7 +377,7 @@ pub async fn save_chat_history(
     let mut ch = ConversationHistory::new(
         if let Some(title) = title {
             title
-        } else { 
+        } else {
             "title".into()
         },
         "summary".to_string(),
@@ -378,9 +386,7 @@ pub async fn save_chat_history(
     );
 
     // generate the conversation summary
-    ch.summary = ch
-        .generate_summary(client)
-        .await?;
+    ch.summary = ch.generate_summary(client).await?;
 
     // if we pass it Some filename - we keep using that file as history
     let (filename, file_path) = if let Some(existing_filename) = filename {
@@ -418,7 +424,10 @@ pub fn print_conversation_history(history: &str) {
     println!("Conversation history: ");
     // check if conversation history is long
     if history.len() > MAX_CHARACTERS_WITHOUT_PROMPT {
-        println!("This conversation history is very long ({} characters).", history.len());
+        println!(
+            "This conversation history is very long ({} characters).",
+            history.len()
+        );
         print!("Do you want to display the entire history? (y/n): ");
         io::stdout().flush().unwrap();
 
@@ -428,7 +437,10 @@ pub fn print_conversation_history(history: &str) {
         if user_input.trim().to_lowercase() == "y" {
             println!("{}", history.yellow());
         } else {
-            println!("Displaying first {} characters:", MAX_CHARACTERS_WITHOUT_PROMPT);
+            println!(
+                "Displaying first {} characters:",
+                MAX_CHARACTERS_WITHOUT_PROMPT
+            );
             println!("{}", &history[..MAX_CHARACTERS_WITHOUT_PROMPT].yellow());
             println!("... (truncated)");
         }
