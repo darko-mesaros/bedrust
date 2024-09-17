@@ -31,6 +31,7 @@ figlet-rs = "0.1.5"
 ignore = "0.4.22"
 image = "0.25.0"
 indicatif = "0.17.8"
+lazy_static = "1.5.0"
 quick-xml = { version = "0.31.0", features = ["serde", "serde-types", "serialize"] }
 rand = "0.8.5"
 ron = "0.8.1"

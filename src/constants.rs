@@ -1,4 +1,6 @@
 // This file contains constants (duh)
+use aws_sdk_bedrockruntime::types::InferenceConfiguration;
+use lazy_static::lazy_static;
 
 // PROMPTS
 pub static CODE_CHAT_PROMPT: &str = r#"
@@ -26,10 +28,33 @@ Here is the example of such an array:
 
 Give me an array of important files for a project type that has the following directory items:
 "#;
+pub static CONVERSATION_TITLE_PROMPT: &str = r#"
+Based on our conversation, generate a concise and descriptive title (4-6 words max) that captures the main topic or purpose of our discussion. This title will be used as a filename, so avoid special characters and keep it easily readable. You will only respond with tthe title and nothing else. Only return the filename in lowercase.
+
+Here is an example of such a title:
+hello_world_this_is_a_title
+
+Give me the title for this conversation:
+"#;
+
+pub static CONVERSATION_SUMMARY_PROMPT: &str = r#"
+Analyze the following conversation history and provide a concise summary of the key points discussed. Your response should contain ONLY the summary text, without any introductory phrases, explanations, or additional formatting. Limit the summary to 5-8 sentances. The summary will be directly inserted into a JSON file, so ensure it's a continuous text block without line breaks:
+"#;
+
+// INFERENCE CONSTANTS
+lazy_static! {
+    pub static ref CONVERSATION_HISTORY_INF_PARAMS: InferenceConfiguration =
+        InferenceConfiguration::builder()
+            .max_tokens(1024)
+            .top_p(0.8)
+            .temperature(0.2)
+            .build();
+}
 
 // HELPER CONSTANTS
 // FIX: the model id is hardcoded, we need to make this configurable
 pub static PROJECT_GUESS_MODEL_ID: &str = "anthropic.claude-3-sonnet-20240229-v1:0";
+pub static CONVERSATION_HISTORY_MODEL_ID: &str = "anthropic.claude-3-sonnet-20240229-v1:0";
 pub static CODE_IGNORE_DIRS: &[&str] = &[
     // Rust
     "target",

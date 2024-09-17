@@ -574,6 +574,7 @@ dependencies = [
  "ignore",
  "image",
  "indicatif",
+ "lazy_static",
  "quick-xml",
  "rand",
  "ron",

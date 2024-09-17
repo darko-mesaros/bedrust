@@ -1,13 +1,11 @@
 use std::io;
 use std::io::Write;
-use std::fs;
 
-use dirs::home_dir;
-use dialoguer::{theme::ColorfulTheme, FuzzySelect};
 use anyhow::anyhow;
 use anyhow::Result;
 use aws_sdk_bedrockruntime::types::InferenceConfiguration;
 use bedrust::utils;
+use dialoguer::{theme::ColorfulTheme, FuzzySelect};
 
 use bedrust::configure_aws;
 use bedrust::utils::prompt_for_model_selection;
@@ -203,6 +201,7 @@ async fn main() -> Result<()> {
 
         // get user input
         let mut current_file: Option<String> = None;
+        let mut title: Option<String> = None;
         loop {
             println!("----------------------------------------");
             println!("🤖 | What would you like to know today?");
@@ -225,11 +224,19 @@ async fn main() -> Result<()> {
                 conversation_history.clear();
                 current_file = None;
                 continue;
+            // SAVING CHAT HISTORY
+            // TODO: Implement a feature that will distinguish between user input and LLM output 
+            // this will likely need to be handled in the way I handle conversation_history as I
+            // just store everything as raw there.
             } else if question == "/s" {
+                // if there is a current_file set we keep writing to that file
                 let filename = if let Some(ref file) = current_file {
-                    file.to_string()
+                    save_chat_history(&conversation_history, Some(file), title.clone(), &bedrock_runtime_client)
+                        .await?
                 } else {
-                    match save_chat_history(&conversation_history) {
+                    match save_chat_history(&conversation_history, None, None, &bedrock_runtime_client)
+                        .await
+                    {
                         Ok(name) => {
                             current_file = Some(name.clone());
                             name
@@ -240,10 +247,7 @@ async fn main() -> Result<()> {
                         }
                     }
                 };
-                match fs::write(home_dir().unwrap().join(format!(".config/{}/chats/{}", constants::CONFIG_DIR_NAME, filename)), &conversation_history) {
-                    Ok(_) => println!("Chat history saved to: {}", filename),
-                    Err(e) => eprintln!("Error saving chat history: {}", e),
-                }
+                println!("Chat history saved to: {}", filename);
                 continue;
             } else if question == "/r" {
                 match utils::list_chat_histories() {
@@ -260,10 +264,14 @@ async fn main() -> Result<()> {
                             .unwrap();
                         let selected_history = &histories[selection];
                         match utils::load_chat_history(selected_history) {
-                            Ok(content) => {
-                                conversation_history = content;
-                                current_file = Some(selected_history.to_string());
+                            // we load the filename and the content from the history so we can keep
+                            // sasving to it
+                            Ok((content, filename, existing_title)) => {
+                                conversation_history = content.clone();
+                                current_file = Some(filename);
+                                title = Some(existing_title);
                                 println!("Loaded chat history from: {}", selected_history);
+                                utils::print_conversation_history(&content);
                                 println!("You can now continue the conversation.");
                             }
                             Err(e) => eprintln!("Error loading chat history: {}", e),
@@ -277,8 +285,8 @@ async fn main() -> Result<()> {
                 utils::print_warning("----------------------------------------");
                 utils::print_warning("Currently supported chat commands: ");
                 utils::print_warning("/c\t \t - Clear current chat history");
-                utils::print_warning("/s\t \t - Save chat history");
-                utils::print_warning("/r\t \t - Recall and load a chat history");
+                utils::print_warning("/s\t \t - (BETA) Save chat history");
+                utils::print_warning("/r\t \t - (BETA) Recall and load a chat history");
                 utils::print_warning("/q\t \t - Quit");
                 continue;
             }
