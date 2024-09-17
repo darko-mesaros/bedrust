@@ -24,6 +24,7 @@ use crate::constants;
 
 // TODO:
 // - Print the summary when recalling the chat
+// - Make sure that the filename is correct when saving - enforce chekcks and fallbacks
 // - Consider other locations for saving the conversations
 // - Produce the print with some syntax highlighting
 // - Distinguish between user and computer input in the json
@@ -282,9 +283,7 @@ impl ConversationHistory {
         &self,
         client: &aws_sdk_bedrockruntime::Client,
     ) -> Result<String, anyhow::Error> {
-        let mut query = String::new();
-        query.push_str(constants::CONVERSATION_TITLE_PROMPT);
-        query.push_str(&self.history);
+        let query = constants::CONVERSATION_TITLE_PROMPT.replace("{}", &self.history);
         let model_id = constants::CONVERSATION_HISTORY_MODEL_ID;
         let content = ContentBlock::Text(query);
         println!("Generating a new file name for this conversation: ");
@@ -295,7 +294,7 @@ impl ConversationHistory {
             match call_converse(
                 client,
                 model_id.to_string(),
-                constants::CONVERSATION_HISTORY_INF_PARAMS.clone(),
+                constants::CONVERSATION_HISTORY_TITLE_INF_PARAMS.clone(),
                 content.clone(),
                 None,
             )
@@ -325,9 +324,7 @@ impl ConversationHistory {
         &self,
         client: &aws_sdk_bedrockruntime::Client,
     ) -> Result<String, anyhow::Error> {
-        let mut query = String::new();
-        query.push_str(constants::CONVERSATION_SUMMARY_PROMPT);
-        query.push_str(&self.history);
+        let query = constants::CONVERSATION_SUMMARY_PROMPT.replace("{}", &self.history);
         let model_id = constants::CONVERSATION_HISTORY_MODEL_ID;
         let content = ContentBlock::Text(query);
         println!("Generating a summary for this conversation: ");

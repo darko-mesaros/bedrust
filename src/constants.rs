@@ -28,24 +28,38 @@ Here is the example of such an array:
 
 Give me an array of important files for a project type that has the following directory items:
 "#;
-pub static CONVERSATION_TITLE_PROMPT: &str = r#"
-Based on our conversation, generate a concise and descriptive title (4-6 words max) that captures the main topic or purpose of our discussion. This title will be used as a filename, so avoid special characters and keep it easily readable. You will only respond with tthe title and nothing else. Only return the filename in lowercase.
 
-Here is an example of such a title:
-hello_world_this_is_a_title
+pub static CONVERSATION_TITLE_PROMPT: &str = r#"This is a conversation history between a human user and a large language model. Generate only a concise 4-6 word title for the following history enclosed in the <CONVERSATON_HISTORY> tags. The title should use underscores instead of spaces, and be all in lowercase. Do not provide any additional text or explanation.
 
-Give me the title for this conversation:
-"#;
+<CONVERSATON_HISTORY>
+{}
+</CONVERSATON_HISTORY>
 
-pub static CONVERSATION_SUMMARY_PROMPT: &str = r#"
-Analyze the following conversation history and provide a concise summary of the key points discussed. Your response should contain ONLY the summary text, without any introductory phrases, explanations, or additional formatting. Limit the summary to 5-8 sentances. The summary will be directly inserted into a JSON file, so ensure it's a continuous text block without line breaks:
-"#;
+Title:"#;
+
+
+pub static CONVERSATION_SUMMARY_PROMPT: &str = r#"This is a conversation history from a human user and a large language model. Summarize the key points of the following conversation in a single, cohesive paragraph. The conversation is enclosed in the <CONVERSATON_HISTORY> tags. Do not use bullet points or numbered lists. Focus on the main topics discussed and any conclusions reached. Keep the summary concise, between 3-5 sentences. Provide only the summary paragraph, without any introductory phrases or explanations.
+
+<CONVERSATON_HISTORY>
+{}
+</CONVERSATON_HISTORY>
+
+Summary:"#;
 
 // INFERENCE CONSTANTS
 lazy_static! {
     pub static ref CONVERSATION_HISTORY_INF_PARAMS: InferenceConfiguration =
         InferenceConfiguration::builder()
-            .max_tokens(1024)
+            .max_tokens(256)
+            .top_p(0.8)
+            .temperature(0.2)
+            .build();
+}
+
+lazy_static! {
+    pub static ref CONVERSATION_HISTORY_TITLE_INF_PARAMS: InferenceConfiguration =
+        InferenceConfiguration::builder()
+            .max_tokens(32)
             .top_p(0.8)
             .temperature(0.2)
             .build();
