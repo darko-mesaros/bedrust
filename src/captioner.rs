@@ -142,6 +142,7 @@ pub async fn caption_image(
             content,
             // FIX: Avoid the clone
             system_prompt.clone(),
+            false,
         )
         .await?;
         progress_bar.inc(1);

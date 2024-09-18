@@ -126,6 +126,7 @@ async fn guess_code_type(
             inf_param.clone(),
             content.clone(),
             None,
+            true,
         )
         .await
         {

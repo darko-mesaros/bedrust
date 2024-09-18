@@ -286,7 +286,7 @@ impl ConversationHistory {
         let query = constants::CONVERSATION_TITLE_PROMPT.replace("{}", &self.history);
         let model_id = constants::CONVERSATION_HISTORY_MODEL_ID;
         let content = ContentBlock::Text(query);
-        println!("Generating a new file name for this conversation: ");
+        println!("⏳ | Generating a new file name for this conversation... ");
         // === RETRY MECHANISM ===
         let max_retries = 3;
         let mut retry_count = 0;
@@ -297,10 +297,14 @@ impl ConversationHistory {
                 constants::CONVERSATION_HISTORY_TITLE_INF_PARAMS.clone(),
                 content.clone(),
                 None,
+                false,
             )
             .await
             {
-                Ok(response) => return Ok(response),
+                Ok(response) => {
+                    println!("✅ | Done ");
+                    return Ok(response)
+                }
                 Err(e) => {
                     // if an error occurs, print it and retry
                     println!("🔴 | Error: {}", e);
@@ -327,7 +331,7 @@ impl ConversationHistory {
         let query = constants::CONVERSATION_SUMMARY_PROMPT.replace("{}", &self.history);
         let model_id = constants::CONVERSATION_HISTORY_MODEL_ID;
         let content = ContentBlock::Text(query);
-        println!("Generating a summary for this conversation: ");
+        println!("⏳ | Generating a summary for this conversation... ");
         println!();
         // === RETRY MECHANISM ===
         let max_retries = 3;
@@ -339,6 +343,7 @@ impl ConversationHistory {
                 constants::CONVERSATION_HISTORY_INF_PARAMS.clone(),
                 content.clone(),
                 None,
+                false,
             )
             .await
             {
