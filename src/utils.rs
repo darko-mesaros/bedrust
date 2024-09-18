@@ -2,7 +2,7 @@ use crate::models::converse::call_converse;
 use anyhow::anyhow;
 use aws_sdk_bedrockruntime::types::ContentBlock;
 use clap::{Parser, ValueEnum};
-use dialoguer::{theme::ColorfulTheme, FuzzySelect};
+use dialoguer::{theme::ColorfulTheme, Confirm, FuzzySelect};
 use figlet_rs::FIGfont;
 use ron::ser::PrettyConfig;
 
@@ -328,6 +328,7 @@ impl ConversationHistory {
         let model_id = constants::CONVERSATION_HISTORY_MODEL_ID;
         let content = ContentBlock::Text(query);
         println!("Generating a summary for this conversation: ");
+        println!();
         // === RETRY MECHANISM ===
         let max_retries = 3;
         let mut retry_count = 0;
@@ -411,7 +412,9 @@ pub async fn save_chat_history(
     Ok(filename)
 }
 
-pub fn load_chat_history(filename: &str) -> Result<(String, String, String), anyhow::Error> {
+pub fn load_chat_history(
+    filename: &str,
+) -> Result<(String, String, String, String), anyhow::Error> {
     let home_dir = home_dir().expect("Failed to get HOME directory");
     let chat_dir = home_dir.join(format!(".config/{}/chats", constants::CONFIG_DIR_NAME));
     let file_path = chat_dir.join(filename);
@@ -419,37 +422,51 @@ pub fn load_chat_history(filename: &str) -> Result<(String, String, String), any
     let content = fs::read_to_string(file_path)?;
 
     let ch = serde_json::from_str::<ConversationHistory>(content.as_str())?;
-    Ok((ch.history, filename.to_string(), ch.title.to_string()))
+    Ok((
+        ch.history,
+        filename.to_string(),
+        ch.title.to_string(),
+        ch.summary,
+    ))
 }
 
 pub fn print_conversation_history(history: &str) {
     const MAX_CHARACTERS_WITHOUT_PROMPT: usize = 1000;
 
-    println!("Conversation history: ");
-    // check if conversation history is long
-    if history.len() > MAX_CHARACTERS_WITHOUT_PROMPT {
-        println!(
-            "This conversation history is very long ({} characters).",
-            history.len()
-        );
-        print!("Do you want to display the entire history? (y/n): ");
-        io::stdout().flush().unwrap();
+    print_warning("----------------------------------------");
+    let confirmation = Confirm::new()
+        .with_prompt("Do you want to print the conversation history?")
+        .interact()
+        .unwrap();
 
-        let mut user_input = String::new();
-        io::stdin().read_line(&mut user_input).unwrap();
-
-        if user_input.trim().to_lowercase() == "y" {
-            println!("{}", history.yellow());
-        } else {
+    if confirmation {
+        print_warning("----------------------------------------");
+        println!("Conversation history: ");
+        // check if conversation history is long
+        if history.len() > MAX_CHARACTERS_WITHOUT_PROMPT {
             println!(
-                "Displaying first {} characters:",
-                MAX_CHARACTERS_WITHOUT_PROMPT
+                "This conversation history is very long ({} characters).",
+                history.len()
             );
-            println!("{}", &history[..MAX_CHARACTERS_WITHOUT_PROMPT].yellow());
-            println!("... (truncated)");
+            print!("Do you want to display the entire history? (y/n): ");
+            io::stdout().flush().unwrap();
+
+            let mut user_input = String::new();
+            io::stdin().read_line(&mut user_input).unwrap();
+
+            if user_input.trim().to_lowercase() == "y" {
+                println!("{}", history.yellow());
+            } else {
+                println!(
+                    "Displaying first {} characters:",
+                    MAX_CHARACTERS_WITHOUT_PROMPT
+                );
+                println!("{}", &history[..MAX_CHARACTERS_WITHOUT_PROMPT].yellow());
+                println!("... (truncated)");
+            }
+        } else {
+            println!("{}", history.yellow());
         }
-    } else {
-        println!("{}", history.yellow());
     }
 }
 

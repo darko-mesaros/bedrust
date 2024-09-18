@@ -5,6 +5,7 @@ use anyhow::anyhow;
 use anyhow::Result;
 use aws_sdk_bedrockruntime::types::InferenceConfiguration;
 use bedrust::utils;
+use colored::*;
 use dialoguer::{theme::ColorfulTheme, FuzzySelect};
 
 use bedrust::configure_aws;
@@ -257,7 +258,7 @@ async fn main() -> Result<()> {
                         }
                     }
                 };
-                println!("Chat history saved to: {}", filename);
+                println!("Chat history saved to: {}", filename.cyan());
                 continue;
             } else if question == "/r" {
                 match utils::list_chat_histories() {
@@ -276,11 +277,15 @@ async fn main() -> Result<()> {
                         match utils::load_chat_history(selected_history) {
                             // we load the filename and the content from the history so we can keep
                             // sasving to it
-                            Ok((content, filename, existing_title)) => {
+                            Ok((content, filename, existing_title, summary)) => {
                                 conversation_history = content.clone();
                                 current_file = Some(filename);
                                 title = Some(existing_title);
-                                println!("Loaded chat history from: {}", selected_history);
+                                utils::print_warning("----------------------------------------");
+                                println!("Loaded chat history from: {}", selected_history.yellow());
+                                println!();
+                                println!("Loaded chat summary: ");
+                                println!("{}", summary);
                                 utils::print_conversation_history(&content);
                                 println!("You can now continue the conversation.");
                             }

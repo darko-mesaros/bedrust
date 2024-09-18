@@ -37,7 +37,6 @@ pub static CONVERSATION_TITLE_PROMPT: &str = r#"This is a conversation history b
 
 Title:"#;
 
-
 pub static CONVERSATION_SUMMARY_PROMPT: &str = r#"This is a conversation history from a human user and a large language model. Summarize the key points of the following conversation in a single, cohesive paragraph. The conversation is enclosed in the <CONVERSATON_HISTORY> tags. Do not use bullet points or numbered lists. Focus on the main topics discussed and any conclusions reached. Keep the summary concise, between 3-5 sentences. Provide only the summary paragraph, without any introductory phrases or explanations.
 
 <CONVERSATON_HISTORY>
