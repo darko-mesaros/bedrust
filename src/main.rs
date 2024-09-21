@@ -16,13 +16,16 @@ use bedrust::captioner::list_files_in_path_by_extension;
 use bedrust::captioner::write_captions;
 use bedrust::captioner::Image;
 use bedrust::captioner::OutputFormat;
-use bedrust::utils::{check_for_config, initialize_config, print_warning, save_chat_history};
+use bedrust::utils::{check_for_config, initialize_config, print_warning};
+use bedrust::chat::{ConversationEntity, Conversation, ConversationHistory, save_chat_history, list_chat_histories, load_chat_history, print_conversation_history};
 use clap::Parser;
 
 use bedrust::code::code_chat;
 use bedrust::constants;
 use bedrust::models::converse_stream::call_converse_stream;
 use bedrust::models::{check_model_features, ModelFeatures};
+
+use chrono::prelude::*;
 
 // TODO:
 // So far I've implemented the converse API for general purpose chat and the code chat.
@@ -34,6 +37,11 @@ use bedrust::models::{check_model_features, ModelFeatures};
 // - Remove nom v3.2.1 - [DONE] ✅
 // - Remove unwanted commented out code - [DONE] ✅
 // - Make sure everything works after ripping out the old code - [DONE] ✅
+//
+// IDEA: Long term memory (facts about a user)
+// - Medium term (stuff we talked about in the past)
+// - Short term ( current conversation )
+// Storing all the facts about you
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -186,6 +194,11 @@ async fn main() -> Result<()> {
             let mut convo = String::new();
             convo.push_str(constants::CODE_CHAT_PROMPT);
 
+            // conversation
+            let mut code_convo_start = Conversation::new(
+                ConversationEntity::User,
+                constants::CODE_CHAT_PROMPT.to_string());
+
             let code =
                 code_chat(arguments.source.clone().unwrap(), &bedrock_runtime_client).await?;
             println!("----------------------------------------");
@@ -193,6 +206,15 @@ async fn main() -> Result<()> {
 
             // Return this conversation
             convo.push_str(code.as_str());
+            code_convo_start.content.push_str(code.as_str());
+
+            // TODO: CLEANUP
+            // conversation history
+            let mut ch = ConversationHistory::new(
+                None,
+                None,
+                Some(convo.clone()),
+            );
             convo
         } else {
             // We are not looking at code
@@ -261,7 +283,7 @@ async fn main() -> Result<()> {
                 println!("Chat history saved to: {}", filename.cyan());
                 continue;
             } else if question == "/r" {
-                match utils::list_chat_histories() {
+                match list_chat_histories() {
                     Ok(histories) => {
                         if histories.is_empty() {
                             println!("No chat histories found.");
@@ -274,7 +296,7 @@ async fn main() -> Result<()> {
                             .interact()
                             .unwrap();
                         let selected_history = &histories[selection];
-                        match utils::load_chat_history(selected_history) {
+                        match load_chat_history(selected_history) {
                             // we load the filename and the content from the history so we can keep
                             // sasving to it
                             Ok((content, filename, existing_title, summary)) => {
@@ -286,7 +308,7 @@ async fn main() -> Result<()> {
                                 println!();
                                 println!("Loaded chat summary: ");
                                 println!("{}", summary);
-                                utils::print_conversation_history(&content);
+                                print_conversation_history(&content);
                                 println!("You can now continue the conversation.");
                             }
                             Err(e) => eprintln!("Error loading chat history: {}", e),
@@ -319,7 +341,7 @@ async fn main() -> Result<()> {
                 inference_parameters.clone(),
             )
             .await?;
-            conversation_history.push_str(&streamresp);
+            conversation_history.push_str(&streamresp.to_string());
             conversation_history.push('\n');
         }
     }

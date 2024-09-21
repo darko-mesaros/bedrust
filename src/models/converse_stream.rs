@@ -6,6 +6,7 @@ use aws_sdk_bedrockruntime::{
         ConverseStreamOutput as ConverseStreamOutputType, InferenceConfiguration, Message,
     },
 };
+use crate::chat::{ConversationEntity, Conversation, ConversationHistory};
 
 // Converse Error type
 //
@@ -75,7 +76,8 @@ pub async fn call_converse_stream(
     model_id: String,
     user_message: &str,
     inference_parameters: InferenceConfiguration,
-) -> Result<String, BedrockConverseStreamError> {
+//) -> Result<String, BedrockConverseStreamError> {
+) -> Result<Conversation, BedrockConverseStreamError> {
     let response = bc
         .converse_stream()
         .model_id(model_id)
@@ -100,6 +102,12 @@ pub async fn call_converse_stream(
     // A string that response the message back
     let mut output = String::new();
 
+    // return the conversation
+    let mut convo = Conversation::new(
+        ConversationEntity::Assistant,
+        String::new(),
+    );
+
     // the main printing loop
     loop {
         let token = stream.recv().await;
@@ -110,7 +118,10 @@ pub async fn call_converse_stream(
                 output.push_str(&next);
                 Ok(())
             }
-            Ok(None) => break,
+            Ok(None) => {
+                convo.content.push_str(&output);
+                break
+            },
             Err(e) => Err(e
                 .as_service_error()
                 .map(BedrockConverseStreamError::from)
@@ -122,7 +133,7 @@ pub async fn call_converse_stream(
 
     println!();
 
-    Ok(output)
+    Ok(convo)
 }
 
 // Call Call

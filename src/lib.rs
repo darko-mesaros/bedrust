@@ -3,6 +3,7 @@ pub mod code;
 pub mod constants;
 pub mod models;
 pub mod utils;
+pub mod chat;
 
 use aws_config::environment::credentials::EnvironmentVariableCredentialsProvider;
 use aws_config::imds::credentials::ImdsCredentialsProvider;
