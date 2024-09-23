@@ -181,16 +181,17 @@ async fn main() -> Result<()> {
                 arguments.source.clone().unwrap().into_os_string()
             );
             println!("----------------------------------------");
-            let mut convo = String::new();
-            convo.push_str(constants::CODE_CHAT_PROMPT);
+            //convo.push_str(constants::CODE_CHAT_PROMPT);
 
             let code =
                 code_chat(arguments.source.clone().unwrap(), &bedrock_runtime_client).await?;
             println!("----------------------------------------");
             print_warning("⚠ THIS IS A BETA FEATURE ⚠");
 
+            //let convo = constants::CODE_CHAT_PROMPT.replace("{}", code.as_str());
+            let convo = constants::CODE_PROMPT.replace("{}", code.as_str());
             // Return this conversation
-            convo.push_str(code.as_str());
+            //convo.push_str(code.as_str());
             convo
         } else {
             // We are not looking at code
