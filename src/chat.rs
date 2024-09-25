@@ -53,6 +53,10 @@ impl Display for ConversationEntity {
 }
 
 // NOTE: USE THE MESSAGE OBJECT - NO NEED TO CREATE MY OWN
+// BUT, the problem is that the Message Struct does not implement the Serialize and Deseriealize
+// traits. This can be solved by implementhing these traits, or just have a way to manually get
+// data from the structs and push to a file. The sole reason for this is being able to save the
+// conversations locally and reload them.
 #[derive(Debug, Deserialize, Serialize)] 
 pub struct Conversation {
     pub role: ConversationEntity,
@@ -71,6 +75,8 @@ impl Conversation {
     }
 }
 
+// NOTE: This prints out the conversation in the following format:
+// <role>: <content>
 impl Display for Conversation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}: {}", self.role, self.content)
