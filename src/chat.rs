@@ -3,13 +3,13 @@ use anyhow::anyhow;
 use aws_sdk_bedrockruntime::types::{ContentBlock, ConversationRole, Message};
 use dialoguer::Confirm;
 
+use crate::utils::print_warning;
 use serde::{Deserialize, Serialize};
 use std::{
+    fmt::Display,
     fs,
     io::{self, Write},
-    fmt::Display,
 };
-use crate::utils::print_warning;
 
 use colored::*;
 
@@ -41,14 +41,17 @@ impl From<Message> for SerializableMessage {
             role: message.role().as_str().to_string(),
             // Iterating throught the Vec<ContentBlock> of the Message.content()
             // And then storing them all as a vector of Strings. Just for text in this case.
-            content: vec![message.content().iter() 
+            content: vec![message
+                .content()
+                .iter()
                 .find_map(|block| {
                     if let ContentBlock::Text(text) = block {
                         Some(text.to_string())
                     } else {
                         None
                     }
-                }).unwrap()]
+                })
+                .unwrap()],
         }
     }
 }
@@ -59,10 +62,13 @@ impl From<SerializableMessage> for Message {
         // SerializableMessage
         Message::builder()
             .role(ConversationRole::from(serializable.role.as_str()))
-            .set_content(
-                Some(serializable.content.into_iter()
+            .set_content(Some(
+                serializable
+                    .content
+                    .into_iter()
                     .map(ContentBlock::Text)
-                    .collect()))
+                    .collect(),
+            ))
             .build()
             .unwrap()
     }
@@ -98,21 +104,15 @@ impl Display for ConversationEntity {
 // traits. This can be solved by implementhing these traits, or just have a way to manually get
 // data from the structs and push to a file. The sole reason for this is being able to save the
 // conversations locally and reload them.
-#[derive(Debug, Deserialize, Serialize)] 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Conversation {
     pub role: ConversationEntity,
     pub content: String,
 }
 
 impl Conversation {
-    pub fn new(
-        role: ConversationEntity,
-        content: String
-    ) -> Conversation {
-        Conversation {
-            role,
-            content,
-        }
+    pub fn new(role: ConversationEntity, content: String) -> Conversation {
+        Conversation { role, content }
     }
 }
 
@@ -124,21 +124,17 @@ impl Display for Conversation {
     }
 }
 
-
-#[derive(Debug, Deserialize, Serialize)] 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Content {
     pub text: String,
 }
 
-
 // NOTE: Either implement Ser De for the Message or just use my own
 
-// #[derive(Debug, Deserialize, Serialize)] 
+// #[derive(Debug, Deserialize, Serialize)]
 // pub struct ChTest {
 //     pub message: Message,
 // }
-
-
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ConversationHistory {
@@ -188,7 +184,6 @@ impl ConversationHistory {
             messages: None,
             timestamp: local.to_string(),
         }
-
     }
 
     async fn generate_title(
@@ -196,8 +191,7 @@ impl ConversationHistory {
         client: &aws_sdk_bedrockruntime::Client,
     ) -> Result<String, anyhow::Error> {
         let messages_str = &self.to_messages_string();
-        let query = constants::CONVERSATION_TITLE_PROMPT.replace(
-            "{}", messages_str);
+        let query = constants::CONVERSATION_TITLE_PROMPT.replace("{}", messages_str);
         let model_id = constants::CONVERSATION_HISTORY_MODEL_ID;
         let content = ContentBlock::Text(query);
         println!("⏳ | Generating a new file name for this conversation... ");
@@ -217,7 +211,7 @@ impl ConversationHistory {
             {
                 Ok(response) => {
                     println!("✅ | Done ");
-                    return Ok(response)
+                    return Ok(response);
                 }
                 Err(e) => {
                     // if an error occurs, print it and retry
@@ -243,8 +237,7 @@ impl ConversationHistory {
         client: &aws_sdk_bedrockruntime::Client,
     ) -> Result<String, anyhow::Error> {
         let messages_str = &self.to_messages_string();
-        let query = constants::CONVERSATION_SUMMARY_PROMPT.replace(
-            "{}", messages_str);
+        let query = constants::CONVERSATION_SUMMARY_PROMPT.replace("{}", messages_str);
 
         let model_id = constants::CONVERSATION_HISTORY_MODEL_ID;
         let content = ContentBlock::Text(query);

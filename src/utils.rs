@@ -1,15 +1,11 @@
 use anyhow::anyhow;
 use clap::{Parser, ValueEnum};
-use dialoguer::{theme::ColorfulTheme,FuzzySelect};
+use dialoguer::{theme::ColorfulTheme, FuzzySelect};
 use figlet_rs::FIGfont;
 use ron::ser::PrettyConfig;
 
 use serde::{Deserialize, Serialize};
-use std::{
-    fmt::Display,
-    fs,
-    path::PathBuf,
-};
+use std::{fmt::Display, fs, path::PathBuf};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 use colored::*;
@@ -17,7 +13,6 @@ use colored::*;
 use dirs::home_dir;
 
 use crate::constants;
-
 
 // ######################################## ARGUMENT PARSING
 #[derive(Parser)]
@@ -244,4 +239,3 @@ pub fn initialize_config() -> Result<(), anyhow::Error> {
     println!("✅ | Bedrust configuration has been initialized in ~/.config/bedrust. You may now use it as normal.");
     Ok(())
 }
-

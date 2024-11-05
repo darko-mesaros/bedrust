@@ -19,15 +19,17 @@ use bedrust::captioner::list_files_in_path_by_extension;
 use bedrust::captioner::write_captions;
 use bedrust::captioner::Image;
 use bedrust::captioner::OutputFormat;
+use bedrust::chat::{
+    list_chat_histories, load_chat_history, print_conversation_history, save_chat_history,
+    Conversation, ConversationEntity, ConversationHistory, SerializableMessage,
+};
 use bedrust::utils::{check_for_config, initialize_config, print_warning};
-use bedrust::chat::{SerializableMessage, ConversationEntity, Conversation, ConversationHistory, save_chat_history, list_chat_histories, load_chat_history, print_conversation_history};
 use clap::Parser;
 
 use bedrust::code::code_chat;
 use bedrust::constants;
 use bedrust::models::converse_stream::call_converse_stream;
 use bedrust::models::{check_model_features, ModelFeatures};
-
 
 // TODO:
 // So far I've implemented the converse API for general purpose chat and the code chat.
@@ -209,7 +211,6 @@ async fn main() -> Result<()> {
                 .set_role(Some(ConversationRole::User))
                 .set_content(Some(vec![ContentBlock::Text(convo)]))
                 .build()?;
-                
 
             // TODO: CLEANUP
             // conversation history
@@ -221,11 +222,7 @@ async fn main() -> Result<()> {
         } else {
             // We are not looking at code
             // Just return an empty string
-            ConversationHistory::new(
-                None,
-                None,
-                None
-            )
+            ConversationHistory::new(None, None, None)
         };
 
         // get user input
@@ -346,7 +343,8 @@ async fn main() -> Result<()> {
             // One way I think I can do it is by creating a question outside of the main loop, and
             // filling it with contents before I go and ask the question.
             conversation_history.messages = if arguments.source.is_some() {
-                let mut code_msg = conversation_history.messages
+                let mut code_msg = conversation_history
+                    .messages
                     .unwrap()
                     .first()
                     .unwrap()
@@ -362,19 +360,15 @@ async fn main() -> Result<()> {
                     .build()?;
                 let ser_msg: SerializableMessage = message.into();
                 Some(vec![ser_msg])
-                    
             } else {
                 let message = Message::builder()
                     .set_role(Some(ConversationRole::User))
                     .set_content(Some(vec![ContentBlock::Text(question.to_string())]))
                     .build()?;
-                let mut messages = conversation_history.messages
-                    .unwrap_or_default()
-                    .clone();
+                let mut messages = conversation_history.messages.unwrap_or_default().clone();
                 messages.push(message.into());
                 Some(messages)
             };
-
 
             println!("----------------------------------------");
             println!("☎️  | Calling Model: {}", &model_id);
@@ -394,7 +388,6 @@ async fn main() -> Result<()> {
             let mut messages = conversation_history.messages.unwrap();
             messages.push(message.into());
             conversation_history.messages = Some(messages);
-
         }
     }
 

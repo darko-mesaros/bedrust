@@ -1,12 +1,12 @@
+use crate::chat::{Conversation, ConversationEntity, ConversationHistory};
 use aws_sdk_bedrockruntime::{
     error::ProvideErrorMetadata,
     operation::converse_stream::ConverseStreamError,
     types::{
-        error::ConverseStreamOutputError,
-        ConverseStreamOutput as ConverseStreamOutputType, InferenceConfiguration, Message,
+        error::ConverseStreamOutputError, ConverseStreamOutput as ConverseStreamOutputType,
+        InferenceConfiguration, Message,
     },
 };
-use crate::chat::{Conversation, ConversationEntity, ConversationHistory};
 
 // Converse Error type
 //
@@ -76,15 +76,15 @@ pub async fn call_converse_stream(
     model_id: String,
     conversation_history: &ConversationHistory,
     inference_parameters: InferenceConfiguration,
-//) -> Result<String, BedrockConverseStreamError> {
+    //) -> Result<String, BedrockConverseStreamError> {
 ) -> Result<Conversation, BedrockConverseStreamError> {
-
-    let msg: Vec<Message> = conversation_history.messages.clone()
+    let msg: Vec<Message> = conversation_history
+        .messages
+        .clone()
         .unwrap()
         .into_iter()
         .map(Message::from)
         .collect();
-
 
     let response = bc
         .converse_stream()
@@ -113,10 +113,7 @@ pub async fn call_converse_stream(
     let mut output = String::new();
 
     // return the conversation
-    let mut convo = Conversation::new(
-        ConversationEntity::Assistant,
-        String::new(),
-    );
+    let mut convo = Conversation::new(ConversationEntity::Assistant, String::new());
 
     // the main printing loop
     loop {
@@ -130,8 +127,8 @@ pub async fn call_converse_stream(
             }
             Ok(None) => {
                 convo.content.push_str(&output);
-                break
-            },
+                break;
+            }
             Err(e) => Err(e
                 .as_service_error()
                 .map(BedrockConverseStreamError::from)
