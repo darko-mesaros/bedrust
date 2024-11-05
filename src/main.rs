@@ -7,6 +7,7 @@ use aws_sdk_bedrockruntime::types::ContentBlock;
 use aws_sdk_bedrockruntime::types::ConversationRole;
 use aws_sdk_bedrockruntime::types::InferenceConfiguration;
 use aws_sdk_bedrockruntime::types::Message;
+use bedrust::config;
 use bedrust::utils;
 use colored::*;
 use dialoguer::{theme::ColorfulTheme, FuzzySelect};
@@ -21,9 +22,9 @@ use bedrust::captioner::Image;
 use bedrust::captioner::OutputFormat;
 use bedrust::chat::{
     list_chat_histories, load_chat_history, print_conversation_history, save_chat_history,
-    Conversation, ConversationEntity, ConversationHistory, SerializableMessage,
+    ConversationHistory, SerializableMessage,
 };
-use bedrust::utils::{check_for_config, initialize_config, print_warning};
+use bedrust::utils::{check_for_config, print_warning};
 use clap::Parser;
 
 use bedrust::code::code_chat;
@@ -53,37 +54,7 @@ async fn main() -> Result<()> {
     let arguments = utils::Args::parse();
     // Checking for the `--init` flag and then initializing the configuration
     if arguments.init {
-        if check_for_config()? {
-            print_warning("****************************************");
-            print_warning("WARNING:");
-            println!("You are trying to initialize the Bedrust configuration");
-            println!("This will overwrite your configuration files in $HOME/.config/bedrust/");
-            print!("ARE YOU SURE YOU WANT DO TO THIS? Y/N: ");
-            io::stdout().flush()?; // so the answers are typed on the same line as above
-
-            let mut confirmation = String::new();
-            io::stdin().read_line(&mut confirmation)?;
-            if confirmation.trim().eq_ignore_ascii_case("y") {
-                print_warning("I ask AGAIN");
-                print!("ARE YOU SURE YOU WANT DO TO THIS? Y/N: ");
-                io::stdout().flush()?; // so the answers are typed on the same line as above
-
-                let mut confirmation = String::new();
-                io::stdin().read_line(&mut confirmation)?;
-
-                if confirmation.trim().eq_ignore_ascii_case("y") {
-                    println!("----------------------------------------");
-                    println!("📜 | Initializing Bedrust configuration.");
-                    initialize_config()?;
-                }
-            }
-        } else {
-            println!("----------------------------------------");
-            println!("📜 | Initializing Bedrust configuration.");
-            initialize_config()?;
-        }
-        print_warning("Bedrust will now exit");
-        std::process::exit(0);
+        config::prompt_init_config()?;
     }
     // checking if the configuration files exist
     if !check_for_config()? {
