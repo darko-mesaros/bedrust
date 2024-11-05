@@ -1,7 +1,6 @@
 use std::io;
 use std::io::Write;
 
-use anyhow::anyhow;
 use anyhow::Result;
 use aws_sdk_bedrockruntime::types::ContentBlock;
 use aws_sdk_bedrockruntime::types::ConversationRole;
@@ -15,12 +14,7 @@ use dialoguer::{theme::ColorfulTheme, FuzzySelect};
 use bedrust::configure_aws;
 use bedrust::utils::prompt_for_model_selection;
 
-use bedrust::captioner::caption_image;
 use bedrust::captioner::caption_process;
-use bedrust::captioner::list_files_in_path_by_extension;
-use bedrust::captioner::write_captions;
-use bedrust::captioner::Image;
-use bedrust::captioner::OutputFormat;
 use bedrust::chat::{
     list_chat_histories, load_chat_history, print_conversation_history, save_chat_history,
     ConversationHistory, SerializableMessage,
@@ -31,7 +25,6 @@ use clap::Parser;
 use bedrust::code::code_chat;
 use bedrust::constants;
 use bedrust::models::converse_stream::call_converse_stream;
-use bedrust::models::{check_model_features, ModelFeatures};
 
 // TODO:
 // So far I've implemented the converse API for general purpose chat and the code chat.
