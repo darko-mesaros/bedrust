@@ -26,6 +26,47 @@ use crate::constants;
 // - Produce the print with some syntax highlighting
 // - Distinguish between user and computer input in the json
 // - Run checks for model support for the hardcoded models
+//
+// --- TEST Seriazible message ---
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SerializableMessage {
+    pub role: String,
+    pub content: Vec<String>,
+}
+
+// Convert Message to SerializableMessage
+impl From<Message> for SerializableMessage {
+    fn from(message: Message) -> Self {
+        SerializableMessage {
+            role: message.role().as_str().to_string(),
+            // Iterating throught the Vec<ContentBlock> of the Message.content()
+            // And then storing them all as a vector of Strings. Just for text in this case.
+            content: vec![message.content().iter() 
+                .find_map(|block| {
+                    if let ContentBlock::Text(text) = block {
+                        Some(text.to_string())
+                    } else {
+                        None
+                    }
+                }).unwrap()]
+        }
+    }
+}
+// Convert SerializableMessage to Message
+impl From<SerializableMessage> for Message {
+    fn from(serializable: SerializableMessage) -> Self {
+        // Running the Message::builder pattern to create a brand new message from the
+        // SerializableMessage
+        Message::builder()
+            .role(ConversationRole::from(serializable.role.as_str()))
+            .set_content(
+                Some(serializable.content.into_iter()
+                    .map(ContentBlock::Text)
+                    .collect()))
+            .build()
+            .unwrap()
+    }
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum ConversationEntity {
@@ -99,11 +140,12 @@ pub struct Content {
 
 
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ConversationHistory {
     pub title: Option<String>,
     pub summary: Option<String>,
-    pub history: Option<String>,
+    // pub history: Option<String>,
+    pub messages: Option<Vec<SerializableMessage>>,
     pub timestamp: String,
 }
 
@@ -111,26 +153,51 @@ impl ConversationHistory {
     pub fn new(
         title: Option<String>,
         summary: Option<String>,
-        history: Option<String>,
+        // history: Option<String>,
+        messages: Option<Vec<SerializableMessage>>,
     ) -> ConversationHistory {
         let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
         ConversationHistory {
             title,
             summary,
-            history,
+            // history,
+            messages,
             timestamp: local.to_string(),
         }
+    }
+
+    // This converts the messages into a big string of - role:content
+    pub fn to_messages_string(&self) -> String {
+        match &self.messages {
+            Some(messages) => messages
+                .iter()
+                .map(|msg| format!("{}:{}", msg.role, msg.content.join("\n")))
+                .collect::<Vec<String>>()
+                .join("\n\n"),
+            None => String::new(),
+        }
+    }
+
+    // Clearing the current chat history - but I feel there is a better way to do this
+    pub fn clear(&self) -> Self {
+        let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
+        ConversationHistory {
+            title: None,
+            summary: None,
+            // history: None,
+            messages: None,
+            timestamp: local.to_string(),
+        }
+
     }
 
     async fn generate_title(
         &self,
         client: &aws_sdk_bedrockruntime::Client,
     ) -> Result<String, anyhow::Error> {
+        let messages_str = &self.to_messages_string();
         let query = constants::CONVERSATION_TITLE_PROMPT.replace(
-            "{}", &self.history
-                .as_ref()
-                .unwrap()
-        );
+            "{}", messages_str);
         let model_id = constants::CONVERSATION_HISTORY_MODEL_ID;
         let content = ContentBlock::Text(query);
         println!("⏳ | Generating a new file name for this conversation... ");
@@ -175,12 +242,10 @@ impl ConversationHistory {
         &self,
         client: &aws_sdk_bedrockruntime::Client,
     ) -> Result<String, anyhow::Error> {
+        let messages_str = &self.to_messages_string();
         let query = constants::CONVERSATION_SUMMARY_PROMPT.replace(
-            "{}", 
-            &self.history
-                .as_ref()
-                .unwrap()
-        );
+            "{}", messages_str);
+
         let model_id = constants::CONVERSATION_HISTORY_MODEL_ID;
         let content = ContentBlock::Text(query);
         println!("⏳ | Generating a summary for this conversation... ");
@@ -223,17 +288,15 @@ impl ConversationHistory {
 
 // TODO: Name the chat histories somehow
 pub async fn save_chat_history(
-    conversation_history: &str,
+    // conversation_history: &str,
     filename: Option<&str>,
     title: Option<String>,
+    messages: &Option<Vec<SerializableMessage>>,
     client: &aws_sdk_bedrockruntime::Client,
 ) -> Result<String, anyhow::Error> {
     let home_dir = home_dir().expect("Failed to get HOME directory");
     let save_dir = home_dir.join(format!(".config/{}/chats", constants::CONFIG_DIR_NAME));
     fs::create_dir_all(&save_dir)?;
-
-    // some data we need
-    let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
 
     // create ConversationHistory Struct
     let mut ch = ConversationHistory::new(
@@ -243,7 +306,8 @@ pub async fn save_chat_history(
             Some("title".into())
         },
         Some("summary".to_string()),
-        Some(conversation_history.to_string()),
+        // Some(conversation_history.to_string()),
+        messages.clone(),
     );
 
     // generate the conversation summary
@@ -270,7 +334,7 @@ pub async fn save_chat_history(
 
 pub fn load_chat_history(
     filename: &str,
-) -> Result<(String, String, String, String), anyhow::Error> {
+) -> Result<(Vec<SerializableMessage>, String, String, String), anyhow::Error> {
     let home_dir = home_dir().expect("Failed to get HOME directory");
     let chat_dir = home_dir.join(format!(".config/{}/chats", constants::CONFIG_DIR_NAME));
     let file_path = chat_dir.join(filename);
@@ -279,14 +343,14 @@ pub fn load_chat_history(
 
     let ch = serde_json::from_str::<ConversationHistory>(content.as_str())?;
     Ok((
-        ch.history.unwrap(),
+        ch.messages.unwrap(), // Loads the messages
         filename.to_string(),
         ch.title.expect("NO_TITLE").to_string(),
         ch.summary.expect("NO_SUMMARY"),
     ))
 }
 
-pub fn print_conversation_history(history: &str) {
+pub fn print_conversation_history(history: &ConversationHistory) {
     const MAX_CHARACTERS_WITHOUT_PROMPT: usize = 1000;
 
     print_warning("----------------------------------------");
@@ -296,6 +360,7 @@ pub fn print_conversation_history(history: &str) {
         .unwrap();
 
     if confirmation {
+        let history = history.to_messages_string();
         print_warning("----------------------------------------");
         println!("Conversation history: ");
         // check if conversation history is long

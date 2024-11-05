@@ -3,7 +3,10 @@ use std::io::Write;
 
 use anyhow::anyhow;
 use anyhow::Result;
+use aws_sdk_bedrockruntime::types::ContentBlock;
+use aws_sdk_bedrockruntime::types::ConversationRole;
 use aws_sdk_bedrockruntime::types::InferenceConfiguration;
+use aws_sdk_bedrockruntime::types::Message;
 use bedrust::utils;
 use colored::*;
 use dialoguer::{theme::ColorfulTheme, FuzzySelect};
@@ -17,7 +20,7 @@ use bedrust::captioner::write_captions;
 use bedrust::captioner::Image;
 use bedrust::captioner::OutputFormat;
 use bedrust::utils::{check_for_config, initialize_config, print_warning};
-use bedrust::chat::{ConversationEntity, Conversation, ConversationHistory, save_chat_history, list_chat_histories, load_chat_history, print_conversation_history};
+use bedrust::chat::{SerializableMessage, ConversationEntity, Conversation, ConversationHistory, save_chat_history, list_chat_histories, load_chat_history, print_conversation_history};
 use clap::Parser;
 
 use bedrust::code::code_chat;
@@ -25,7 +28,6 @@ use bedrust::constants;
 use bedrust::models::converse_stream::call_converse_stream;
 use bedrust::models::{check_model_features, ModelFeatures};
 
-use chrono::prelude::*;
 
 // TODO:
 // So far I've implemented the converse API for general purpose chat and the code chat.
@@ -194,11 +196,6 @@ async fn main() -> Result<()> {
             let mut convo = String::new();
             convo.push_str(constants::CODE_CHAT_PROMPT);
 
-            // conversation
-            let mut code_convo_start = Conversation::new(
-                ConversationEntity::User,
-                constants::CODE_CHAT_PROMPT.to_string());
-
             let code =
                 code_chat(arguments.source.clone().unwrap(), &bedrock_runtime_client).await?;
             println!("----------------------------------------");
@@ -206,20 +203,29 @@ async fn main() -> Result<()> {
 
             // Return this conversation
             convo.push_str(code.as_str());
-            code_convo_start.content.push_str(code.as_str());
+
+            // Create a new Message
+            let code_message = Message::builder()
+                .set_role(Some(ConversationRole::User))
+                .set_content(Some(vec![ContentBlock::Text(convo)]))
+                .build()?;
+                
 
             // TODO: CLEANUP
             // conversation history
-            let mut ch = ConversationHistory::new(
+            ConversationHistory::new(
                 None,
                 None,
-                Some(convo.clone()),
-            );
-            convo
+                Some(vec![code_message.into()]), // Converts a Message into SerializableMessage
+            )
         } else {
             // We are not looking at code
             // Just return an empty string
-            String::new()
+            ConversationHistory::new(
+                None,
+                None,
+                None
+            )
         };
 
         // get user input
@@ -255,17 +261,17 @@ async fn main() -> Result<()> {
                 // if there is a current_file set we keep writing to that file
                 let filename = if let Some(ref file) = current_file {
                     save_chat_history(
-                        &conversation_history,
                         Some(file),
                         title.clone(),
+                        &conversation_history.messages,
                         &bedrock_runtime_client,
                     )
                     .await?
                 } else {
                     match save_chat_history(
-                        &conversation_history,
                         None,
                         None,
+                        &conversation_history.messages,
                         &bedrock_runtime_client,
                     )
                     .await
@@ -299,8 +305,10 @@ async fn main() -> Result<()> {
                         match load_chat_history(selected_history) {
                             // we load the filename and the content from the history so we can keep
                             // sasving to it
+                            // TODO: Make this work with SerializableMessage
                             Ok((content, filename, existing_title, summary)) => {
-                                conversation_history = content.clone();
+                                // conversation_history = content.clone();
+                                conversation_history.messages = Some(content);
                                 current_file = Some(filename);
                                 title = Some(existing_title);
                                 utils::print_warning("----------------------------------------");
@@ -308,7 +316,7 @@ async fn main() -> Result<()> {
                                 println!();
                                 println!("Loaded chat summary: ");
                                 println!("{}", summary);
-                                print_conversation_history(&content);
+                                print_conversation_history(&conversation_history);
                                 println!("You can now continue the conversation.");
                             }
                             Err(e) => eprintln!("Error loading chat history: {}", e),
@@ -327,8 +335,40 @@ async fn main() -> Result<()> {
                 utils::print_warning("/q\t \t - Quit");
                 continue;
             }
-            conversation_history.push_str(question);
-            conversation_history.push('\n');
+            // If we are looking at code - I need to include the user question in the first
+            // message. Otherwise Bedrock keeps complaining about alternate messages between user
+            // and assistant
+            // FIX: THIS IS VERY UGLY AND NEEDS TO BE MADE BETTER
+            conversation_history.messages = if arguments.source.is_some() {
+                let mut code_msg = conversation_history.messages
+                    .unwrap()
+                    .first()
+                    .unwrap()
+                    .clone()
+                    .content;
+
+                code_msg.push("\n".to_string());
+                code_msg.push(question.to_string());
+                let code_msg = code_msg.into_iter().map(|s| s.to_string()).collect();
+                let message = Message::builder()
+                    .set_role(Some(ConversationRole::User))
+                    .set_content(Some(vec![ContentBlock::Text(code_msg)]))
+                    .build()?;
+                let ser_msg: SerializableMessage = message.into();
+                Some(vec![ser_msg])
+                    
+            } else {
+                let message = Message::builder()
+                    .set_role(Some(ConversationRole::User))
+                    .set_content(Some(vec![ContentBlock::Text(question.to_string())]))
+                    .build()?;
+                let mut messages = conversation_history.messages
+                    .unwrap_or_default()
+                    .clone();
+                messages.push(message.into());
+                Some(messages)
+            };
+
 
             println!("----------------------------------------");
             println!("☎️  | Calling Model: {}", &model_id);
@@ -337,12 +377,18 @@ async fn main() -> Result<()> {
             let streamresp = call_converse_stream(
                 &bedrock_runtime_client,
                 model_id.to_string(),
-                &conversation_history.to_string(),
+                &conversation_history,
                 inference_parameters.clone(),
             )
             .await?;
-            conversation_history.push_str(&streamresp.to_string());
-            conversation_history.push('\n');
+            let message = Message::builder()
+                .set_role(Some(ConversationRole::Assistant))
+                .set_content(Some(vec![ContentBlock::Text(streamresp.to_string())]))
+                .build()?;
+            let mut messages = conversation_history.messages.unwrap();
+            messages.push(message.into());
+            conversation_history.messages = Some(messages);
+
         }
     }
 

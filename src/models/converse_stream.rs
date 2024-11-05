@@ -2,11 +2,11 @@ use aws_sdk_bedrockruntime::{
     error::ProvideErrorMetadata,
     operation::converse_stream::ConverseStreamError,
     types::{
-        error::ConverseStreamOutputError, ContentBlock, ConversationRole,
+        error::ConverseStreamOutputError,
         ConverseStreamOutput as ConverseStreamOutputType, InferenceConfiguration, Message,
     },
 };
-use crate::chat::{ConversationEntity, Conversation, ConversationHistory};
+use crate::chat::{Conversation, ConversationEntity, ConversationHistory};
 
 // Converse Error type
 //
@@ -74,23 +74,33 @@ fn get_converse_output_text(
 pub async fn call_converse_stream(
     bc: &aws_sdk_bedrockruntime::Client,
     model_id: String,
-    user_message: &str,
+    conversation_history: &ConversationHistory,
     inference_parameters: InferenceConfiguration,
 //) -> Result<String, BedrockConverseStreamError> {
 ) -> Result<Conversation, BedrockConverseStreamError> {
+
+    let msg: Vec<Message> = conversation_history.messages.clone()
+        .unwrap()
+        .into_iter()
+        .map(Message::from)
+        .collect();
+
+
     let response = bc
         .converse_stream()
         .model_id(model_id)
-        .messages(
-            Message::builder()
-                .role(ConversationRole::User)
-                .content(ContentBlock::Text(user_message.to_string()))
-                .build()
-                .map_err(|_| "Failed to build message")?,
-        )
+        .set_messages(Some(msg))
+        // .messages(
+        //     Message::builder()
+        //         .role(ConversationRole::User)
+        //         .content(ContentBlock::Text("".to_string()))
+        //         .build()
+        //         .map_err(|_| "Failed to build message")?,
+        // )
         .inference_config(inference_parameters)
         .send()
         .await;
+    //println!("DEBUG: {:#?}", &response);
 
     let mut stream = match response {
         Ok(output) => Ok(output.stream),
