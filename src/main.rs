@@ -339,6 +339,12 @@ async fn main() -> Result<()> {
             // message. Otherwise Bedrock keeps complaining about alternate messages between user
             // and assistant
             // FIX: THIS IS VERY UGLY AND NEEDS TO BE MADE BETTER
+            // ALSO ITS BROKENS
+            // While it work on the onset it always keep moving the last message all the way up. I
+            // need to figure out a way to do this only for the first message, and then not do it
+            // anymore
+            // One way I think I can do it is by creating a question outside of the main loop, and
+            // filling it with contents before I go and ask the question.
             conversation_history.messages = if arguments.source.is_some() {
                 let mut code_msg = conversation_history.messages
                     .unwrap()
