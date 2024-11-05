@@ -16,6 +16,7 @@ use bedrust::configure_aws;
 use bedrust::utils::prompt_for_model_selection;
 
 use bedrust::captioner::caption_image;
+use bedrust::captioner::caption_process;
 use bedrust::captioner::list_files_in_path_by_extension;
 use bedrust::captioner::write_captions;
 use bedrust::captioner::Image;
@@ -71,7 +72,7 @@ async fn main() -> Result<()> {
     let bedrust_config = utils::load_bedrust_config()?;
 
     // configuring the SDK
-    let config = configure_aws(String::from("us-east-1"), bedrust_config.aws_profile).await;
+    let config = configure_aws(String::from("us-east-1"), &bedrust_config.aws_profile).await;
     // setup the bedrock-runtime client
     let bedrock_runtime_client = aws_sdk_bedrockruntime::Client::new(&config);
     // setup the bedrock client
@@ -94,63 +95,14 @@ async fn main() -> Result<()> {
 
     // if we enabled captioning of images
     if arguments.caption.is_some() {
-        match check_model_features(model_id, &bedrock_client, ModelFeatures::Images).await {
-            Ok(b) => {
-                match b {
-                    true => {
-                        // FIX: This should be a function
-                        println!("----------------------------------------");
-                        println!("🖼️ | Image captioner running.");
-                        let path = arguments
-                            .caption
-                            .ok_or_else(|| anyhow!("No path specified"))?;
-                        println!("⌛ | Processing images in: {:?}", &path);
-                        let files =
-                            list_files_in_path_by_extension(path, bedrust_config.supported_images)?;
-                        println!("🔎 | Found {:?} images in path.", &files.len());
-
-                        let mut images: Vec<Image> = Vec::new();
-                        for file in &files {
-                            images.push(Image::new(file)?);
-                        }
-
-                        caption_image(
-                            &mut images,
-                            model_id,
-                            &bedrust_config.caption_prompt,
-                            &bedrock_runtime_client,
-                            &bedrock_client,
-                        )
-                        .await?;
-
-                        // NOTE: This is parsing the `-x` argument and then writing or not, an XML file
-                        // Thanks StellyUK <3
-
-                        // FIX: This whole if else statement does not look nice.
-                        // i feel it can be better. As doing the whole logic
-                        // behind an expression seems ... weird
-                        let outfile = if arguments.xml {
-                            let outfile = "captions.xml";
-                            write_captions(images, OutputFormat::Xml, outfile)?;
-                            outfile
-                        } else {
-                            let outfile = "captions.json";
-                            write_captions(images, OutputFormat::Json, outfile)?;
-                            outfile
-                        };
-                        println!(
-                            "✅ | Captioning complete, find the generated captions in `{}`",
-                            outfile
-                        );
-                        println!("----------------------------------------");
-                    }
-                    false => {
-                        eprintln!("The current model selected does not support Images. Please consider using one that does.")
-                    }
-                }
-            }
-            Err(e) => eprintln!("Unable to determine model features: {}", e),
-        };
+        caption_process(
+            model_id,
+            &bedrock_client,
+            &bedrock_runtime_client,
+            arguments.caption,
+            &bedrust_config,
+            arguments.xml,
+        ).await?;
     } else {
         // default run
         utils::hello_header("Bedrust")?;

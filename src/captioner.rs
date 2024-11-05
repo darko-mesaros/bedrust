@@ -13,6 +13,9 @@ use quick_xml::se;
 use serde::Serialize;
 
 use crate::models::converse::call_converse;
+use crate::models::ModelFeatures;
+use crate::models::check_model_features;
+use crate::utils::BedrustConfig;
 
 #[derive(Debug, Serialize)]
 pub struct Image {
@@ -49,6 +52,77 @@ impl Image {
         Ok(image)
     }
 }
+
+// This function wraps a bunch of other steps in order to capiton an image (check for model
+// capabilities and such). 
+// This is for the sole reason of moving this out of the main.rs function
+pub async fn caption_process(
+    model_id: &str,
+    bedrock_client: &aws_sdk_bedrock::Client,
+    bedrockruntime_client: &aws_sdk_bedrockruntime::Client,
+    images_path: Option<PathBuf>,
+    bedrust_config: &BedrustConfig,
+    xml: bool,
+    ) -> Result<(), anyhow::Error> {
+    match check_model_features(model_id, bedrock_client, ModelFeatures::Images).await {
+        Ok(b) => {
+            match b {
+                true => {
+                    println!("----------------------------------------");
+                    println!("🖼️ | Image captioner running.");
+                    let path = images_path
+                        .ok_or_else(|| anyhow!("No path specified"))?;
+                    println!("⌛ | Processing images in: {:?}", &path);
+                    let files =
+                        list_files_in_path_by_extension(path, bedrust_config.supported_images.clone())?;
+                    println!("🔎 | Found {:?} images in path.", &files.len());
+
+                    let mut images: Vec<Image> = Vec::new();
+                    for file in &files {
+                        images.push(Image::new(file)?);
+                    }
+
+                    caption_image(
+                        &mut images,
+                        model_id,
+                        &bedrust_config.caption_prompt,
+                        bedrockruntime_client,
+                        bedrock_client,
+                    )
+                    .await?;
+
+                    // NOTE: This is parsing the `-x` argument and then writing or not, an XML file
+                    // Thanks StellyUK <3
+
+                    // FIX: This whole if else statement does not look nice.
+                    // i feel it can be better. As doing the whole logic
+                    // behind an expression seems ... weird
+                    let outfile = if xml {
+                        let outfile = "captions.xml";
+                        write_captions(images, OutputFormat::Xml, outfile)?;
+                        outfile
+                    } else {
+                        let outfile = "captions.json";
+                        write_captions(images, OutputFormat::Json, outfile)?;
+                        outfile
+                    };
+                    println!(
+                        "✅ | Captioning complete, find the generated captions in `{}`",
+                        outfile
+                    );
+                    println!("----------------------------------------");
+                }
+                false => {
+                    eprintln!("The current model selected does not support Images. Please consider using one that does.")
+                }
+            }
+        }
+        Err(e) => eprintln!("Unable to determine model features: {}", e),
+    };
+
+    Ok(())
+
+ }
 
 pub fn list_files_in_path_by_extension(
     p: PathBuf,
