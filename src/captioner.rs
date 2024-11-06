@@ -12,9 +12,9 @@ use indicatif::{ProgressBar, ProgressStyle};
 use quick_xml::se;
 use serde::Serialize;
 
+use crate::models::check_model_features;
 use crate::models::converse::call_converse;
 use crate::models::ModelFeatures;
-use crate::models::check_model_features;
 use crate::utils::BedrustConfig;
 
 #[derive(Debug, Serialize)]
@@ -54,7 +54,7 @@ impl Image {
 }
 
 // This function wraps a bunch of other steps in order to capiton an image (check for model
-// capabilities and such). 
+// capabilities and such).
 // This is for the sole reason of moving this out of the main.rs function
 pub async fn caption_process(
     model_id: &str,
@@ -63,18 +63,19 @@ pub async fn caption_process(
     images_path: Option<PathBuf>,
     bedrust_config: &BedrustConfig,
     xml: bool,
-    ) -> Result<(), anyhow::Error> {
+) -> Result<(), anyhow::Error> {
     match check_model_features(model_id, bedrock_client, ModelFeatures::Images).await {
         Ok(b) => {
             match b {
                 true => {
                     println!("----------------------------------------");
                     println!("🖼️ | Image captioner running.");
-                    let path = images_path
-                        .ok_or_else(|| anyhow!("No path specified"))?;
+                    let path = images_path.ok_or_else(|| anyhow!("No path specified"))?;
                     println!("⌛ | Processing images in: {:?}", &path);
-                    let files =
-                        list_files_in_path_by_extension(path, bedrust_config.supported_images.clone())?;
+                    let files = list_files_in_path_by_extension(
+                        path,
+                        bedrust_config.supported_images.clone(),
+                    )?;
                     println!("🔎 | Found {:?} images in path.", &files.len());
 
                     let mut images: Vec<Image> = Vec::new();
@@ -121,8 +122,7 @@ pub async fn caption_process(
     };
 
     Ok(())
-
- }
+}
 
 pub fn list_files_in_path_by_extension(
     p: PathBuf,

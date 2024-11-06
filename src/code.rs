@@ -1,7 +1,10 @@
+use crate::chat::ConversationHistory;
 use crate::constants;
 use crate::models::converse::call_converse;
+use crate::utils::print_warning;
 use anyhow::anyhow;
 use aws_sdk_bedrockruntime::types::{ContentBlock, InferenceConfiguration};
+use aws_sdk_bedrockruntime::types::{ConversationRole, Message};
 use ignore::DirEntry;
 use std::fs;
 use std::{collections::HashMap, path::PathBuf};
@@ -14,7 +17,46 @@ use std::{collections::HashMap, path::PathBuf};
 // - We need to provide to bits of information before the run commences:
 //   - Size of the files that will be sent over
 //   - Project type we assumed / file extensions being sent over
-//
+
+// This starts a process of the code chat. Moved here instead of being in the main.rs file
+pub async fn code_chat_process(
+    code_path: PathBuf,
+    bedrock_runtime_client: &aws_sdk_bedrockruntime::Client,
+) -> Result<ConversationHistory, anyhow::Error> {
+    println!("----------------------------------------");
+    print_warning("⚠ THIS IS A BETA FEATURE ⚠");
+    println!("----------------------------------------");
+    println!("💾 | Ooh, it Seems we are talking about code today!");
+    println!(
+        "💾 | I was given this dir to review: {:?}",
+        &code_path // NOTE: How to print it here without a clone?
+            .clone()
+            .into_os_string()
+    );
+    println!("----------------------------------------");
+    let mut convo = String::new();
+    convo.push_str(constants::CODE_CHAT_PROMPT);
+
+    let code = code_chat(code_path.clone().to_path_buf(), bedrock_runtime_client).await?;
+    println!("----------------------------------------");
+    print_warning("⚠ THIS IS A BETA FEATURE ⚠");
+
+    // Return this conversation
+    convo.push_str(code.as_str());
+
+    // Create a new Message
+    let code_message = Message::builder()
+        .set_role(Some(ConversationRole::User))
+        .set_content(Some(vec![ContentBlock::Text(convo)]))
+        .build()?;
+
+    // conversation history
+    Ok(ConversationHistory::new(
+        None,
+        None,
+        Some(vec![code_message.into()]), // Converts a Message into SerializableMessage
+    ))
+}
 
 pub async fn code_chat(
     p: PathBuf,

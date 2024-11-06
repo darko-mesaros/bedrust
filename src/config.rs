@@ -29,15 +29,15 @@ pub fn prompt_init_config() -> Result<(), anyhow::Error> {
                         initialize_config()?;
                     }
                 }
-            },
+            }
             false => {
                 println!("----------------------------------------");
                 println!("📜 | Initializing Bedrust configuration.");
                 initialize_config()?;
-            },
+            }
         },
-        Err(e) => eprintln!("There was an issue checking for errors: {}",e)
+        Err(e) => eprintln!("There was an issue checking for errors: {}", e),
     }
     print_warning("Bedrust will now exit");
     std::process::exit(0);
-} 
+}

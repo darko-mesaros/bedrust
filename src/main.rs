@@ -22,8 +22,7 @@ use bedrust::chat::{
 use bedrust::utils::{check_for_config, print_warning};
 use clap::Parser;
 
-use bedrust::code::code_chat;
-use bedrust::constants;
+use bedrust::code::code_chat_process;
 use bedrust::models::converse_stream::call_converse_stream;
 
 // TODO:
@@ -86,7 +85,7 @@ async fn main() -> Result<()> {
         .temperature(bedrust_config.inference_params.temperature)
         .build();
 
-    // if we enabled captioning of images
+    //  === CAPTIONING RUN ===
     if arguments.caption.is_some() {
         caption_process(
             model_id,
@@ -95,50 +94,18 @@ async fn main() -> Result<()> {
             arguments.caption,
             &bedrust_config,
             arguments.xml,
-        ).await?;
+        )
+        .await?;
     } else {
         // default run
         utils::hello_header("Bedrust")?;
 
-        // BETA: SOURCE READING
-        let mut conversation_history = if arguments.source.is_some() {
-            println!("----------------------------------------");
-            print_warning("⚠ THIS IS A BETA FEATURE ⚠");
-            println!("----------------------------------------");
-            println!("💾 | Ooh, it Seems we are talking about code today!");
-            println!(
-                "💾 | I was given this dir to review: {:?}",
-                arguments.source.clone().unwrap().into_os_string()
-            );
-            println!("----------------------------------------");
-            let mut convo = String::new();
-            convo.push_str(constants::CODE_CHAT_PROMPT);
-
-            let code =
-                code_chat(arguments.source.clone().unwrap(), &bedrock_runtime_client).await?;
-            println!("----------------------------------------");
-            print_warning("⚠ THIS IS A BETA FEATURE ⚠");
-
-            // Return this conversation
-            convo.push_str(code.as_str());
-
-            // Create a new Message
-            let code_message = Message::builder()
-                .set_role(Some(ConversationRole::User))
-                .set_content(Some(vec![ContentBlock::Text(convo)]))
-                .build()?;
-
-            // TODO: CLEANUP
-            // conversation history
-            ConversationHistory::new(
-                None,
-                None,
-                Some(vec![code_message.into()]), // Converts a Message into SerializableMessage
-            )
-        } else {
-            // We are not looking at code
-            // Just return an empty string
-            ConversationHistory::new(None, None, None)
+        //  === BETA: SOURCE CODE CHAT ===
+        let mut conversation_history = match arguments.source {
+            Some(ref source_path) => {
+                code_chat_process(source_path.to_path_buf(), &bedrock_runtime_client).await?
+            }
+            None => ConversationHistory::new(None, None, None),
         };
 
         // get user input
@@ -297,6 +264,8 @@ async fn main() -> Result<()> {
                 inference_parameters.clone(),
             )
             .await?;
+
+            // TODO: This can be a function
             let message = Message::builder()
                 .set_role(Some(ConversationRole::Assistant))
                 .set_content(Some(vec![ContentBlock::Text(streamresp.to_string())]))
