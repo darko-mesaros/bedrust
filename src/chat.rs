@@ -174,13 +174,25 @@ impl ConversationHistory {
         }
     }
 
+    // Generate HTML from the conversation
+    pub fn save_as_html(&self) {
+        // TODO: Generate a HTML page with the entire conversation
+        // Have the title at the top, along with the summary and the timestamp(?)
+        // Then just a list of all messages between the user and assistant.
+        // If there was code involved (like in the code chat feature) store that in a separate
+        // segment that is hidden as we do not need to have that taking up space (maybe a foldable
+        // div).
+        // Additionally, add options that we can quickly copy the source code if there is a source
+        // code block
+
+    }
+
     // Clearing the current chat history - but I feel there is a better way to do this
     pub fn clear(&self) -> Self {
         let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
         ConversationHistory {
             title: None,
             summary: None,
-            // history: None,
             messages: None,
             timestamp: local.to_string(),
         }
