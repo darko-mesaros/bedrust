@@ -1,10 +1,8 @@
-use crate::chat::ConversationHistory;
 use crate::constants;
 use crate::models::converse::call_converse;
 use crate::utils::print_warning;
 use anyhow::anyhow;
 use aws_sdk_bedrockruntime::types::{ContentBlock, InferenceConfiguration};
-use aws_sdk_bedrockruntime::types::{ConversationRole, Message};
 use ignore::DirEntry;
 use std::fs;
 use std::{collections::HashMap, path::PathBuf};
@@ -22,7 +20,7 @@ use std::{collections::HashMap, path::PathBuf};
 pub async fn code_chat_process(
     code_path: PathBuf,
     bedrock_runtime_client: &aws_sdk_bedrockruntime::Client,
-) -> Result<ConversationHistory, anyhow::Error> {
+) -> Result<String, anyhow::Error> {
     println!("----------------------------------------");
     print_warning("⚠ THIS IS A BETA FEATURE ⚠");
     println!("----------------------------------------");
@@ -44,18 +42,7 @@ pub async fn code_chat_process(
     // Return this conversation
     convo.push_str(code.as_str());
 
-    // Create a new Message
-    let code_message = Message::builder()
-        .set_role(Some(ConversationRole::User))
-        .set_content(Some(vec![ContentBlock::Text(convo)]))
-        .build()?;
-
-    // conversation history
-    Ok(ConversationHistory::new(
-        None,
-        None,
-        Some(vec![code_message.into()]), // Converts a Message into SerializableMessage
-    ))
+    Ok(convo)
 }
 
 pub async fn code_chat(

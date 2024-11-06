@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO: Ability to generate images
 - TODO: Better code testing
 - TODO: Handle longer pastes better
+
+## [0.8.1] - 2024-11-06
+### Added
+- BETA: You can now save and recall conversations
+
+### Changed
+- Support for additional models (Claude 3.5 and v2, Haiku 3.5, Llama 3.1 models)
+- Better system prompts
+- Cleaned up some code and improved way things are orchestrated
+
 ## [0.8.0] - 2024-09-14
 ### Added
 - Support for Mistral Large 2

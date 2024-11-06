@@ -17,7 +17,7 @@ use bedrust::utils::prompt_for_model_selection;
 use bedrust::captioner::caption_process;
 use bedrust::chat::{
     list_chat_histories, load_chat_history, print_conversation_history, save_chat_history,
-    ConversationHistory, SerializableMessage,
+    ConversationHistory,
 };
 use bedrust::utils::{check_for_config, print_warning};
 use clap::Parser;
@@ -100,17 +100,19 @@ async fn main() -> Result<()> {
         // default run
         utils::hello_header("Bedrust")?;
 
-        //  === BETA: SOURCE CODE CHAT ===
-        let mut conversation_history = match arguments.source {
-            Some(ref source_path) => {
-                code_chat_process(source_path.to_path_buf(), &bedrock_runtime_client).await?
-            }
-            None => ConversationHistory::new(None, None, None),
-        };
-
-        // get user input
+        let mut message_count = 0;
+        let mut conversation_history = ConversationHistory::new(None, None, None);
         let mut current_file: Option<String> = None;
         let mut title: Option<String> = None;
+
+        //  === BETA: SOURCE CODE CHAT ===
+        let code: Option<String> = match arguments.source {
+            Some(ref source_path) => {
+                Some(code_chat_process(source_path.to_path_buf(), &bedrock_runtime_client).await?)
+            }
+            None => None,
+        };
+        // get user input
         loop {
             println!("----------------------------------------");
             println!("🤖 | What would you like to know today?");
@@ -119,6 +121,7 @@ async fn main() -> Result<()> {
 
             let mut question = String::new();
             io::stdin().read_line(&mut question)?;
+            message_count += 1;
 
             let question = question.trim();
             if question.is_empty() {
@@ -218,40 +221,24 @@ async fn main() -> Result<()> {
             // If we are looking at code - I need to include the user question in the first
             // message. Otherwise Bedrock keeps complaining about alternate messages between user
             // and assistant
-            // FIX: THIS IS VERY UGLY AND NEEDS TO BE MADE BETTER
-            // ALSO ITS BROKENS
-            // While it work on the onset it always keep moving the last message all the way up. I
-            // need to figure out a way to do this only for the first message, and then not do it
-            // anymore
-            // One way I think I can do it is by creating a question outside of the main loop, and
-            // filling it with contents before I go and ask the question.
-            conversation_history.messages = if arguments.source.is_some() {
-                let mut code_msg = conversation_history
-                    .messages
-                    .unwrap()
-                    .first()
-                    .unwrap()
-                    .clone()
-                    .content;
-
-                code_msg.push("\n".to_string());
-                code_msg.push(question.to_string());
-                let code_msg = code_msg.into_iter().map(|s| s.to_string()).collect();
-                let message = Message::builder()
+            let message = if arguments.source.is_some() && message_count == 1 {
+                let question_with_code = code
+                    .as_ref()
+                    .map(|src_code| format!("{}\n<question>{}</question>", src_code, question))
+                    .unwrap_or_else(|| question.to_string());
+                Message::builder()
                     .set_role(Some(ConversationRole::User))
-                    .set_content(Some(vec![ContentBlock::Text(code_msg)]))
-                    .build()?;
-                let ser_msg: SerializableMessage = message.into();
-                Some(vec![ser_msg])
+                    .set_content(Some(vec![ContentBlock::Text(question_with_code)]))
+                    .build()?
             } else {
-                let message = Message::builder()
+                Message::builder()
                     .set_role(Some(ConversationRole::User))
                     .set_content(Some(vec![ContentBlock::Text(question.to_string())]))
-                    .build()?;
-                let mut messages = conversation_history.messages.unwrap_or_default().clone();
-                messages.push(message.into());
-                Some(messages)
+                    .build()?
             };
+            let mut messages = conversation_history.messages.unwrap_or_default().clone();
+            messages.push(message.into());
+            conversation_history.messages = Some(messages);
 
             println!("----------------------------------------");
             println!("☎️  | Calling Model: {}", &model_id);

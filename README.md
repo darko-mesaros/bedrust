@@ -4,12 +4,17 @@
 
 A neat way to invoke models on [Amazon Bedrock](https://aws.amazon.com/bedrock/). Written in Rust, and LIVE on [Twitch](https://twitch.tv/ruptwelve).
 
+> NEW AS OF 0.8.1 - BETA: You can now save and recall conversations by using `/s` and `/r` in the chat interface.
+
 Currently supporting the following models:
-- **Claude 3.5 Sonnet**
+- Claude 3.5 v2 Sonnet
+- Claude 3.5 Haiku
+- Claude 3.5 Sonnet
 - Claude V2
 - Claude V3 Sonnet
 - Claude V3 Haiku
 - Llama2 70B
+- LLama3.1 models
 - Cohere Command
 - Jurrasic 2 Ultra
 - Titan Text Express V1

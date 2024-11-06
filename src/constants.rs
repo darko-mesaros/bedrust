@@ -14,6 +14,10 @@ Please prepare to analyze the provided code, keeping in mind the following objec
 3. **Best Practices**: Evaluate whether the code follows best practices in terms of style, structure, and design patterns. Be ready to recommend any changes that could enhance the code quality.
 4. **Specific Questions**: I will have specific questions related to certain parts of the code. Please be prepared to provide detailed answers and examples if needed. Those questions will come after you have been provided the files.
 
+Think about your answer, and ask questions for clarification if needed.
+
+At the end there will an initial user question inside the <question></question> tags.
+
 Here are the files:
 "#;
 
@@ -66,8 +70,8 @@ lazy_static! {
 
 // HELPER CONSTANTS
 // FIX: the model id is hardcoded, we need to make this configurable
-pub static PROJECT_GUESS_MODEL_ID: &str = "anthropic.claude-3-sonnet-20240229-v1:0";
-pub static CONVERSATION_HISTORY_MODEL_ID: &str = "anthropic.claude-3-sonnet-20240229-v1:0";
+pub static PROJECT_GUESS_MODEL_ID: &str = "anthropic.claude-3-haiku-20240307-v1:0";
+pub static CONVERSATION_HISTORY_MODEL_ID: &str = "anthropic.claude-3-haiku-20240307-v1:0";
 pub static CODE_IGNORE_DIRS: &[&str] = &[
     // Rust
     "target",
