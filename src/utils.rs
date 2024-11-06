@@ -58,12 +58,17 @@ pub struct InferenceParams {
 #[derive(clap::ValueEnum, Clone, Serialize, Deserialize, Debug, Copy)]
 pub enum ArgModels {
     Llama270b,
+    Llama31405bInstruct,
+    Llama3170bInstruct,
+    Llama318bInstruct,
     CohereCommand,
     ClaudeV2,
     ClaudeV21,
     ClaudeV3Sonnet,
     ClaudeV3Haiku,
     ClaudeV35Sonnet,
+    ClaudeV352Sonnet,
+    ClaudeV35Haiku,
     Jurrasic2Ultra,
     TitanTextExpressV1,
     Mixtral8x7bInstruct,
@@ -84,9 +89,14 @@ impl ArgModels {
             ArgModels::ClaudeV2 => "anthropic.claude-v2",
             ArgModels::ClaudeV21 => "anthropic.claude-v2:1",
             ArgModels::ClaudeV3Haiku => "anthropic.claude-3-haiku-20240307-v1:0",
+            ArgModels::ClaudeV35Haiku => "anthropic.claude-3-5-haiku-20241022-v1:0",
             ArgModels::ClaudeV3Sonnet => "anthropic.claude-3-sonnet-20240229-v1:0",
             ArgModels::ClaudeV35Sonnet => "anthropic.claude-3-5-sonnet-20240620-v1:0",
+            ArgModels::ClaudeV352Sonnet => "anthropic.claude-3-5-sonnet-20241022-v2:0",
             ArgModels::Llama270b => "meta.llama2-70b-chat-v1",
+            ArgModels::Llama31405bInstruct => "meta.llama3-1-405b-instruct-v1:0",
+            ArgModels::Llama3170bInstruct => "meta.llama3-1-70b-instruct-v1:0",
+            ArgModels::Llama318bInstruct => "meta.llama3-1-8b-instruct-v1:0",
             ArgModels::CohereCommand => "cohere.command-text-v14",
             ArgModels::Jurrasic2Ultra => "ai21.j2-ultra-v1",
             ArgModels::TitanTextExpressV1 => "amazon.titan-text-express-v1",
@@ -132,6 +142,14 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
     println!(
         "{}",
         "/c\t - Clear current chat history".truecolor(255, 229, 153)
+    );
+    println!(
+        "{}",
+        "/s\t - (BETA) Save chat history".truecolor(255, 229, 153)
+    );
+    println!(
+        "{}",
+        "/r\t - (BETA) Recall and load a chat history".truecolor(255, 229, 153)
     );
     println!("{}", "/q\t - Quit".truecolor(255, 229, 153));
     println!("{}", "----------------------------------------".cyan());

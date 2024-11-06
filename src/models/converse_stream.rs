@@ -1,9 +1,10 @@
+use crate::chat::{Conversation, ConversationEntity, ConversationHistory};
 use aws_sdk_bedrockruntime::{
     error::ProvideErrorMetadata,
     operation::converse_stream::ConverseStreamError,
     types::{
-        error::ConverseStreamOutputError, ContentBlock, ConversationRole,
-        ConverseStreamOutput as ConverseStreamOutputType, InferenceConfiguration, Message,
+        error::ConverseStreamOutputError, ConverseStreamOutput as ConverseStreamOutputType,
+        InferenceConfiguration, Message,
     },
 };
 
@@ -73,22 +74,33 @@ fn get_converse_output_text(
 pub async fn call_converse_stream(
     bc: &aws_sdk_bedrockruntime::Client,
     model_id: String,
-    user_message: &str,
+    conversation_history: &ConversationHistory,
     inference_parameters: InferenceConfiguration,
-) -> Result<String, BedrockConverseStreamError> {
+    //) -> Result<String, BedrockConverseStreamError> {
+) -> Result<Conversation, BedrockConverseStreamError> {
+    let msg: Vec<Message> = conversation_history
+        .messages
+        .clone()
+        .unwrap()
+        .into_iter()
+        .map(Message::from)
+        .collect();
+
     let response = bc
         .converse_stream()
         .model_id(model_id)
-        .messages(
-            Message::builder()
-                .role(ConversationRole::User)
-                .content(ContentBlock::Text(user_message.to_string()))
-                .build()
-                .map_err(|_| "Failed to build message")?,
-        )
+        .set_messages(Some(msg))
+        // .messages(
+        //     Message::builder()
+        //         .role(ConversationRole::User)
+        //         .content(ContentBlock::Text("".to_string()))
+        //         .build()
+        //         .map_err(|_| "Failed to build message")?,
+        // )
         .inference_config(inference_parameters)
         .send()
         .await;
+    //println!("DEBUG: {:#?}", &response);
 
     let mut stream = match response {
         Ok(output) => Ok(output.stream),
@@ -100,6 +112,9 @@ pub async fn call_converse_stream(
     // A string that response the message back
     let mut output = String::new();
 
+    // return the conversation
+    let mut convo = Conversation::new(ConversationEntity::Assistant, String::new());
+
     // the main printing loop
     loop {
         let token = stream.recv().await;
@@ -110,7 +125,10 @@ pub async fn call_converse_stream(
                 output.push_str(&next);
                 Ok(())
             }
-            Ok(None) => break,
+            Ok(None) => {
+                convo.content.push_str(&output);
+                break;
+            }
             Err(e) => Err(e
                 .as_service_error()
                 .map(BedrockConverseStreamError::from)
@@ -122,7 +140,7 @@ pub async fn call_converse_stream(
 
     println!();
 
-    Ok(output)
+    Ok(convo)
 }
 
 // Call Call

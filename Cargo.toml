@@ -1,7 +1,7 @@
 [package]
 name = "bedrust"
 description = "A command line tool to invoke and work with Large Language models on AWS, using Amazon Bedrock"
-version = "0.8.0"
+version = "0.8.1"
 edition = "2021"
 authors = ["Darko Mesaros <d@rko.rs>", "Stephen Barr <stephen.barr@devfactory.com>", "Russel Cohen <rcoh@rcoh.me>"]
 license = "MIT OR Apache-2.0"
@@ -22,6 +22,7 @@ aws-sdk-bedrock = "1.49.0"
 aws-sdk-bedrockruntime = "1.49.0"
 aws-types = "1.3.3"
 base64 = "0.22.0"
+chrono = "0.4.38"
 clap = { version = "4.5.0", features = ["derive"] }
 colored = "2.1.0"
 dialoguer = { version = "0.11.0", default-features = false, features = ["fuzzy-select", "completion"] }
@@ -30,6 +31,7 @@ figlet-rs = "0.1.5"
 ignore = "0.4.22"
 image = "0.25.0"
 indicatif = "0.17.8"
+lazy_static = "1.5.0"
 quick-xml = { version = "0.31.0", features = ["serde", "serde-types", "serialize"] }
 rand = "0.8.5"
 ron = "0.8.1"

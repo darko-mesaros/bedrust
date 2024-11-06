@@ -1,4 +1,6 @@
 // This file contains constants (duh)
+use aws_sdk_bedrockruntime::types::InferenceConfiguration;
+use lazy_static::lazy_static;
 
 // PROMPTS
 pub static CODE_CHAT_PROMPT: &str = r#"
@@ -11,6 +13,10 @@ Please prepare to analyze the provided code, keeping in mind the following objec
 2. **Functionality Explanation**: Be prepared to explain the functionality of the code. What does each file or significant section of the code do?
 3. **Best Practices**: Evaluate whether the code follows best practices in terms of style, structure, and design patterns. Be ready to recommend any changes that could enhance the code quality.
 4. **Specific Questions**: I will have specific questions related to certain parts of the code. Please be prepared to provide detailed answers and examples if needed. Those questions will come after you have been provided the files.
+
+Think about your answer, and ask questions for clarification if needed.
+
+At the end there will an initial user question inside the <question></question> tags.
 
 Here are the files:
 "#;
@@ -27,9 +33,45 @@ Here is the example of such an array:
 Give me an array of important files for a project type that has the following directory items:
 "#;
 
+pub static CONVERSATION_TITLE_PROMPT: &str = r#"This is a conversation history between a human user and a large language model. Generate only a concise 4-6 word title for the following history enclosed in the <CONVERSATON_HISTORY> tags. The title should use underscores instead of spaces, and be all in lowercase. Do not provide any additional text or explanation.
+
+<CONVERSATON_HISTORY>
+{}
+</CONVERSATON_HISTORY>
+
+Title:"#;
+
+pub static CONVERSATION_SUMMARY_PROMPT: &str = r#"This is a conversation history from a human user and a large language model. Summarize the key points of the following conversation in a single, cohesive paragraph. The conversation is enclosed in the <CONVERSATON_HISTORY> tags. Do not use bullet points or numbered lists. Focus on the main topics discussed and any conclusions reached. Keep the summary concise, between 3-5 sentences. Provide only the summary paragraph, without any introductory phrases or explanations.
+
+<CONVERSATON_HISTORY>
+{}
+</CONVERSATON_HISTORY>
+
+Summary:"#;
+
+// INFERENCE CONSTANTS
+lazy_static! {
+    pub static ref CONVERSATION_HISTORY_INF_PARAMS: InferenceConfiguration =
+        InferenceConfiguration::builder()
+            .max_tokens(256)
+            .top_p(0.8)
+            .temperature(0.2)
+            .build();
+}
+
+lazy_static! {
+    pub static ref CONVERSATION_HISTORY_TITLE_INF_PARAMS: InferenceConfiguration =
+        InferenceConfiguration::builder()
+            .max_tokens(32)
+            .top_p(0.8)
+            .temperature(0.2)
+            .build();
+}
+
 // HELPER CONSTANTS
 // FIX: the model id is hardcoded, we need to make this configurable
-pub static PROJECT_GUESS_MODEL_ID: &str = "anthropic.claude-3-sonnet-20240229-v1:0";
+pub static PROJECT_GUESS_MODEL_ID: &str = "anthropic.claude-3-haiku-20240307-v1:0";
+pub static CONVERSATION_HISTORY_MODEL_ID: &str = "anthropic.claude-3-haiku-20240307-v1:0";
 pub static CODE_IGNORE_DIRS: &[&str] = &[
     // Rust
     "target",

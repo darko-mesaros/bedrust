@@ -54,6 +54,7 @@ pub async fn call_converse(
     inference_parameters: InferenceConfiguration,
     content: ContentBlock,
     system: Option<Vec<SystemContentBlock>>,
+    echo: bool,
 ) -> Result<String, BedrockConverseError> {
     let response = bc
         .converse()
@@ -74,7 +75,7 @@ pub async fn call_converse(
     match response {
         Ok(output) => {
             let text = get_converse_output_text(output)?;
-            if content.is_text() {
+            if echo {
                 println!("{}", text);
             }
             Ok(text)
