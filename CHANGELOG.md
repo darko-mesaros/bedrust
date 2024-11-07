@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Cleaned up the saving and recalling process
+- Moved out the HTML source code to an external file
 
 ## [0.8.1] - 2024-11-06
 ### Added

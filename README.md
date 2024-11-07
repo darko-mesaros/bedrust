@@ -4,7 +4,7 @@
 
 A neat way to invoke models on [Amazon Bedrock](https://aws.amazon.com/bedrock/). Written in Rust, and LIVE on [Twitch](https://twitch.tv/ruptwelve).
 
-> NEW AS OF 0.8.1 - BETA: You can now save and recall conversations by using `/s` and `/r` in the chat interface.
+> *NEW AS OF 0.8.2* - BETA: You can now export your chat to HTML files. (It will only save them as `conversation.html` in the current directory) 
 
 Currently supporting the following models:
 - Claude 3.5 v2 Sonnet
@@ -89,11 +89,13 @@ Or if you wish to use the default model (the one defined during `--init` / in yo
 
 ## Usage
 ```bash
+A command line tool to invoke and work with Large Language models on AWS, using Amazon Bedrock
+
 Usage: bedrust [OPTIONS]
 
 Options:
       --init
-  -m, --model-id <MODEL_ID>  [possible values: llama270b, cohere-command, claude-v2, claude-v21, claude-v3-sonnet, claude-v3-haiku, claude-v35-sonnet, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct, mistral-large, mistral-large2]
+  -m, --model-id <MODEL_ID>  [possible values: llama270b, llama31405b-instruct, llama3170b-instruct, llama318b-instruct, cohere-command, claude-v2, claude-v21, claude-v3-sonnet, claude-v3-haiku, claude-v35-sonnet, claude-v352-sonnet, claude-v35-haiku, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct, mistral-large, mistral-large2]
   -c, --caption <CAPTION>
   -s, --source <SOURCE>
   -x
@@ -146,6 +148,16 @@ You can now point Bedrust to a directory containing some source code. This will 
 ```bash
 bedrust --source ~/workspace/repos/your_code_repo
 ```
+
+## ⚠️  BETA FEATURE - Chat saving, recalling and export
+
+![screenshot of the chat export feature](/img/chat_export.png)
+
+As of version 0.8.2 you can now save your conversations, recall them at a later time, and even export them as nice HTML files. This feature is still in *heavy beta*, so expect things to break and functionality to change.
+
+The way this works is, when you enter `/s` as a chat command, Bedrust saves your conversation inside of `~/.config/bedrust/chats` as a `.json` file. This fill will contain a generated summary and a title for the conversation. To recall the conversation you can just type `/r` as a chat command, and you will be able to select any of the saved ones.
+
+To export your conversation to HTML, just run `/h`. This will create a file called `conversation.html` in the current directory. I have not yet implemented a feature to choose where to save this file, so for the time being it's just like this. (It's in beta afterall 😅).
 
 ## Configuration files 
 
