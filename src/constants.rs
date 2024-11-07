@@ -3,9 +3,10 @@ use aws_sdk_bedrockruntime::types::InferenceConfiguration;
 use lazy_static::lazy_static;
 
 // PROMPTS
+// TODO: Move this to a Systemprompt
 pub static CODE_CHAT_PROMPT: &str = r#"
 You are my coding assistant and an expert in all things coding.
-I have some code files that I'd like to discuss with you. Each file is provided in the following format:
+I have some code files that I'd like to discuss with you. The entire code base will be enclosed in <SOURCE_CODE_BEDRUST>. XML tags Each file is provided in the following format:
 \n<filename>filename</filename>\n<file_contents>filecontents</file_contents>
 
 Please prepare to analyze the provided code, keeping in mind the following objectives for future questions:
@@ -19,6 +20,7 @@ Think about your answer, and ask questions for clarification if needed.
 At the end there will an initial user question inside the <question></question> tags.
 
 Here are the files:
+<SOURCE_CODE_BEDRUST>{SOURCE_CODE}</SOURCE_CODE_BEDRUST>
 "#;
 
 // NOTE: When using Claude you can use the Agent prompt to just finalize the array - Thank you
@@ -33,7 +35,7 @@ Here is the example of such an array:
 Give me an array of important files for a project type that has the following directory items:
 "#;
 
-pub static CONVERSATION_TITLE_PROMPT: &str = r#"This is a conversation history between a human user and a large language model. Generate only a concise 4-6 word title for the following history enclosed in the <CONVERSATON_HISTORY> tags. The title should use underscores instead of spaces, and be all in lowercase. Do not provide any additional text or explanation.
+pub static CONVERSATION_TITLE_PROMPT: &str = r#"This is a conversation history between a human user and a large language model. Generate only a concise 4-6 word title for the following conversation history. The history is enclosed in the <CONVERSATON_HISTORY> tags. The title should use underscores instead of spaces, and be all in lowercase. Only characters allowed are text characters, numbers and underscore (_). Do not provide any additional text or explanation.
 
 <CONVERSATON_HISTORY>
 {}
@@ -138,3 +140,6 @@ pub static BEDRUST_CONFIG_FILE: &str = r#"BedrustConfig(
 // FIGLET FONT
 pub static FIGLET_FONT_FILENAME: &str = "ansishadow.flf";
 pub const FIGLET_FONT: &str = include_str!("../resources/ansishadow.flf");
+
+// HTML TEMPLATE FOR EXPORT - load from resources
+pub static HTML_TW_TEMPLATE: &str = include_str!("../resources/html/export_template.html");

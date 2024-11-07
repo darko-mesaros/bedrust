@@ -11,6 +11,19 @@ use std::{
     io::{self, Write},
 };
 
+use regex::Regex;
+
+use handlebars::{
+    Handlebars,
+    // Helper,
+    // Context,
+    // RenderContext,
+    // Output,
+    // HelperResult
+};
+
+use convert_case::{Case, Casing};
+
 use colored::*;
 
 use chrono::prelude::*;
@@ -80,7 +93,6 @@ pub enum ConversationEntity {
     Assistant,
 }
 
-// NOTE: Not sure if I need this
 impl ConversationEntity {
     pub fn to_str(&self) -> &'static str {
         match self {
@@ -129,13 +141,6 @@ pub struct Content {
     pub text: String,
 }
 
-// NOTE: Either implement Ser De for the Message or just use my own
-
-// #[derive(Debug, Deserialize, Serialize)]
-// pub struct ChTest {
-//     pub message: Message,
-// }
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ConversationHistory {
     pub title: Option<String>,
@@ -152,7 +157,7 @@ impl ConversationHistory {
         // history: Option<String>,
         messages: Option<Vec<SerializableMessage>>,
     ) -> ConversationHistory {
-        let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
+        let local = Local::now().format("%Y-%m-%d %H:%M"); // e.g. `2014-11-28T21:45:59.324310806+09:00`
         ConversationHistory {
             title,
             summary,
@@ -174,13 +179,161 @@ impl ConversationHistory {
         }
     }
 
+    // Generate HTML from the conversation
+    // TODO: Clean this up and make it dynamic so it saves into a centralized location
+    pub fn save_as_html(&self) -> Result<(), anyhow::Error> {
+        let mut handlebars = Handlebars::new();
+        // Register a custom helper that handles arrays of strings
+        handlebars.register_helper(
+            "nl2br_with_code",
+            Box::new(
+                |h: &handlebars::Helper,
+                 _: &handlebars::Handlebars,
+                 _: &handlebars::Context,
+                 _: &mut handlebars::RenderContext,
+                 out: &mut dyn handlebars::Output| {
+                    if let Some(value) = h.param(0) {
+                        let text = if value.value().is_array() {
+                            value
+                                .value()
+                                .as_array()
+                                .unwrap()
+                                .iter()
+                                .filter_map(|v| v.as_str())
+                                .collect::<Vec<_>>()
+                                .join("\n")
+                        } else {
+                            value.value().as_str().unwrap_or("").to_string()
+                        };
+
+                        // Parse so tha the code block is not really visible during the source code
+                        // shenaningans
+                        // NOTE: Here is, again, the silly edge case
+                        let (p1, p2) = ("<bedrust_be", "gin_source>");
+                        let (p3, p4) = ("</bedrust_en", "d_source>");
+                        let pattern = format!(r"{}{}\s*[\s\S]*?\s*{}{}", 
+                            regex::escape(p1), 
+                            regex::escape(p2),
+                            regex::escape(p3),
+                            regex::escape(p4)
+                        );
+                        let source_code_regex = Regex::new(&pattern).unwrap();
+                        // Replace the source code sections with empty string
+                        let text_without_source = source_code_regex.replace_all(&text, 
+                            r#"<div class="source-removed"><div class="source-removed-content">ℹ️ <span>The source code has been removed from the export</span></div></div>"#
+                        );
+                        // Check if already wrapped in HTML
+                        if text_without_source.starts_with("<pre><code") && 
+                           text_without_source.ends_with("</code></pre>") {
+                            out.write(&text_without_source)?;
+                            return Ok(());
+                        }
+
+                        // Regex for code blocks with optional language
+                        let mut last_pos = 0;
+                        let mut result = String::new();
+
+                        let code_block_regex = Regex::new(r"```(\w*)\n([\s\S]*?)\n```").unwrap();
+                        let mut positions = Vec::new();
+
+                        // Process each code block match
+                        for cap in code_block_regex.captures_iter(&text_without_source) {
+                            // Add everything before this code block with normal nl2br processing
+                            let start = cap.get(0).unwrap().start();
+                            let end = cap.get(0).unwrap().end();
+                            positions.push((
+                                start,
+                                end,
+                                cap.get(1).unwrap().as_str(),
+                                cap.get(2).unwrap().as_str(),
+                            ));
+                        }
+                        // Test out single code strings
+                        let inline_code_regex = Regex::new(r"`([^`]+)`").unwrap();
+
+                        for (start, end, lang, code) in positions {
+                            // Process any text before this code block, including inline code.
+                            let before_text = &text_without_source[last_pos..start];
+                            // Handle inline code in the text before the code block
+                            let processed_before =
+                                process_inline_code(before_text, &inline_code_regex);
+                            result.push_str(&processed_before.replace("\n", "<br>"));
+
+                            // Add the code block
+                            result.push_str(&format!(
+                                r#"<pre><code class="language-{}">{}</code></pre>"#,
+                                if lang.is_empty() { "plaintext" } else { lang },
+                                html_escape::encode_text(code)
+                            ));
+
+                            last_pos = end;
+                        }
+
+                        if last_pos < text_without_source.len() {
+                            let remaining = &text_without_source[last_pos..];
+                            let processed_remaining =
+                                process_inline_code(remaining, &inline_code_regex);
+                            result.push_str(&processed_remaining.replace("\n", "<br>"));
+                        }
+
+                        out.write(&result)?;
+                    }
+                    Ok(())
+                },
+            ),
+        );
+
+        // Converts titles from hello_to_the_world to Hello To The World
+        // Needs the convert_case crate
+        handlebars.register_helper(
+            "format_title",
+            Box::new(
+                |h: &handlebars::Helper,
+                 _: &handlebars::Handlebars,
+                 _: &handlebars::Context,
+                 _: &mut handlebars::RenderContext,
+                 out: &mut dyn handlebars::Output| {
+                    if let Some(value) = h.param(0) {
+                        if let Some(text) = value.value().as_str() {
+                            // Convert from any case to Title Case
+                            let formatted = text.to_case(Case::Title);
+                            out.write(&formatted)?;
+                        }
+                    }
+                    Ok(())
+                },
+            ),
+        );
+
+        match handlebars.register_template_string("chat_export", crate::constants::HTML_TW_TEMPLATE)
+        {
+            Ok(_) => {
+                match handlebars.render("chat_export", &self) {
+                    Ok(render) => {
+                        std::fs::write("conversation.html", render)?;
+                        println!("Succesfully saved the conversation to conversation.html");
+                    }
+                    Err(e) => eprintln!(
+                        "Error: Something went wrong with rendering the HTML template: {}",
+                        e
+                    ),
+                };
+            }
+            Err(e) => eprintln!(
+                "Error: Something went wrong with Registering the template: {}",
+                e
+            ),
+        };
+
+        Ok(())
+    }
+
     // Clearing the current chat history - but I feel there is a better way to do this
     pub fn clear(&self) -> Self {
         let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
         ConversationHistory {
             title: None,
             summary: None,
-            // history: None,
             messages: None,
             timestamp: local.to_string(),
         }
@@ -281,27 +434,13 @@ impl ConversationHistory {
 
 // TODO: Name the chat histories somehow
 pub async fn save_chat_history(
-    // conversation_history: &str,
     filename: Option<&str>,
-    title: Option<String>,
-    messages: &Option<Vec<SerializableMessage>>,
     client: &aws_sdk_bedrockruntime::Client,
+    ch: &mut ConversationHistory,
 ) -> Result<String, anyhow::Error> {
     let home_dir = home_dir().expect("Failed to get HOME directory");
     let save_dir = home_dir.join(format!(".config/{}/chats", constants::CONFIG_DIR_NAME));
     fs::create_dir_all(&save_dir)?;
-
-    // create ConversationHistory Struct
-    let mut ch = ConversationHistory::new(
-        if let Some(title) = title {
-            Some(title)
-        } else {
-            Some("title".into())
-        },
-        Some("summary".to_string()),
-        // Some(conversation_history.to_string()),
-        messages.clone(),
-    );
 
     // generate the conversation summary
     ch.summary = Some(ch.generate_summary(client).await?);
@@ -401,4 +540,33 @@ pub fn list_chat_histories() -> Result<Vec<String>, anyhow::Error> {
 
     chat_files.sort_by(|a, b| b.cmp(a)); // Sort in descending order (newest first)
     Ok(chat_files)
+}
+
+// Helper function to process inline code - for HTML creation
+fn process_inline_code(text: &str, regex: &Regex) -> String {
+    let mut result = String::new();
+    let mut last_pos = 0;
+
+    for cap in regex.captures_iter(text) {
+        let full_match = cap.get(0).unwrap();
+        let code_content = cap.get(1).unwrap();
+
+        // Add text before this inline code
+        result.push_str(&text[last_pos..full_match.start()]);
+
+        // Add the inline code with styling
+        result.push_str(&format!(
+            r#"<code class="language-plaintext inline-code px-1 py-0.5 rounded bg-gray-100 text-sm font-mono">{}</code>"#,
+            html_escape::encode_text(code_content.as_str())
+        ));
+
+        last_pos = full_match.end();
+    }
+
+    // Add any remaining text
+    if last_pos < text.len() {
+        result.push_str(&text[last_pos..]);
+    }
+
+    result
 }

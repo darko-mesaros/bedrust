@@ -103,7 +103,6 @@ async fn main() -> Result<()> {
         let mut message_count = 0;
         let mut conversation_history = ConversationHistory::new(None, None, None);
         let mut current_file: Option<String> = None;
-        let mut title: Option<String> = None;
 
         //  === BETA: SOURCE CODE CHAT ===
         let code: Option<String> = match arguments.source {
@@ -131,6 +130,9 @@ async fn main() -> Result<()> {
             if question == "/q" {
                 println!("Bye!");
                 break;
+            } else if question == "/h" {
+                conversation_history.save_as_html()?;
+                continue;
             } else if question == "/c" {
                 println!("Clearing current chat history");
                 conversation_history.clear();
@@ -145,17 +147,15 @@ async fn main() -> Result<()> {
                 let filename = if let Some(ref file) = current_file {
                     save_chat_history(
                         Some(file),
-                        title.clone(),
-                        &conversation_history.messages,
                         &bedrock_runtime_client,
+                        &mut conversation_history,
                     )
                     .await?
                 } else {
                     match save_chat_history(
                         None,
-                        None,
-                        &conversation_history.messages,
                         &bedrock_runtime_client,
+                        &mut conversation_history,
                     )
                     .await
                     {
@@ -190,10 +190,10 @@ async fn main() -> Result<()> {
                             // sasving to it
                             // TODO: Make this work with SerializableMessage
                             Ok((content, filename, existing_title, summary)) => {
-                                // conversation_history = content.clone();
                                 conversation_history.messages = Some(content);
+                                conversation_history.title = Some(existing_title.clone());
+                                conversation_history.summary = Some(summary.clone());
                                 current_file = Some(filename);
-                                title = Some(existing_title);
                                 utils::print_warning("----------------------------------------");
                                 println!("Loaded chat history from: {}", selected_history.yellow());
                                 println!();
@@ -215,6 +215,9 @@ async fn main() -> Result<()> {
                 utils::print_warning("/c\t \t - Clear current chat history");
                 utils::print_warning("/s\t \t - (BETA) Save chat history");
                 utils::print_warning("/r\t \t - (BETA) Recall and load a chat history");
+                utils::print_warning(
+                    "/h\t \t - (BETA) Export history as HTML(saves in current dir)",
+                );
                 utils::print_warning("/q\t \t - Quit");
                 continue;
             }

@@ -151,6 +151,10 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
         "{}",
         "/r\t - (BETA) Recall and load a chat history".truecolor(255, 229, 153)
     );
+    println!(
+        "{}",
+        "/h\t - (BETA) Export history as HTML(saves in current dir)".truecolor(255, 229, 153)
+    );
     println!("{}", "/q\t - Quit".truecolor(255, 229, 153));
     println!("{}", "----------------------------------------".cyan());
     println!();
