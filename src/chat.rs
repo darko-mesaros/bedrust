@@ -93,7 +93,6 @@ pub enum ConversationEntity {
     Assistant,
 }
 
-// NOTE: Not sure if I need this
 impl ConversationEntity {
     pub fn to_str(&self) -> &'static str {
         match self {
@@ -141,13 +140,6 @@ impl Display for Conversation {
 pub struct Content {
     pub text: String,
 }
-
-// NOTE: Either implement Ser De for the Message or just use my own
-
-// #[derive(Debug, Deserialize, Serialize)]
-// pub struct ChTest {
-//     pub message: Message,
-// }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ConversationHistory {

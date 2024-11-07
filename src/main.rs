@@ -103,7 +103,6 @@ async fn main() -> Result<()> {
         let mut message_count = 0;
         let mut conversation_history = ConversationHistory::new(None, None, None);
         let mut current_file: Option<String> = None;
-        let mut title: Option<String> = None;
 
         //  === BETA: SOURCE CODE CHAT ===
         let code: Option<String> = match arguments.source {
@@ -195,7 +194,6 @@ async fn main() -> Result<()> {
                                 conversation_history.title = Some(existing_title.clone());
                                 conversation_history.summary = Some(summary.clone());
                                 current_file = Some(filename);
-                                title = Some(existing_title);
                                 utils::print_warning("----------------------------------------");
                                 println!("Loaded chat history from: {}", selected_history.yellow());
                                 println!();
