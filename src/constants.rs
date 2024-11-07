@@ -3,9 +3,10 @@ use aws_sdk_bedrockruntime::types::InferenceConfiguration;
 use lazy_static::lazy_static;
 
 // PROMPTS
+// TODO: Move this to a Systemprompt
 pub static CODE_CHAT_PROMPT: &str = r#"
 You are my coding assistant and an expert in all things coding.
-I have some code files that I'd like to discuss with you. Each file is provided in the following format:
+I have some code files that I'd like to discuss with you. The entire code base will be enclosed in <SOURCE_CODE_BEDRUST>. XML tags Each file is provided in the following format:
 \n<filename>filename</filename>\n<file_contents>filecontents</file_contents>
 
 Please prepare to analyze the provided code, keeping in mind the following objectives for future questions:
@@ -19,6 +20,7 @@ Think about your answer, and ask questions for clarification if needed.
 At the end there will an initial user question inside the <question></question> tags.
 
 Here are the files:
+<SOURCE_CODE_BEDRUST>{SOURCE_CODE}</SOURCE_CODE_BEDRUST>
 "#;
 
 // NOTE: When using Claude you can use the Agent prompt to just finalize the array - Thank you
@@ -229,6 +231,41 @@ pub static HTML_TW_TEMPLATE: &str = r#"
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             font-size: 0.875em;
             padding: 0.2em 0.4em;
+        }
+        .source-removed {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #fafafa;
+            border: 1px dashed #d1d5db;
+            border-radius: 0.5rem;
+            position: relative;
+        }
+
+        .source-removed::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(to right, #3b82f6, #60a5fa);
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
+
+        .source-removed-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #6b7280;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .source-removed-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            color: #3b82f6;
+            flex-shrink: 0;
         }
         /* Add padding to accommodate the copy button */
         pre[class*="language-"] {

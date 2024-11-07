@@ -33,14 +33,21 @@ pub async fn code_chat_process(
     );
     println!("----------------------------------------");
     let mut convo = String::new();
-    convo.push_str(constants::CODE_CHAT_PROMPT);
+    //convo.push_str(constants::CODE_CHAT_PROMPT);
 
     let code = code_chat(code_path.clone().to_path_buf(), bedrock_runtime_client).await?;
+
+    // NOTE: Here is something stupid for my edge case
+    let (p1, p2) = ("<bedrust_be", "gin_source>");
+    let (p3, p4) = ("</bedrust_en", "d_source>");
+    let wrapped_code = format!("{}{}{}{}{}",p1, p2, code, p3, p4);
+
+    let query = constants::CODE_CHAT_PROMPT.replace("{SOURCE_CODE}", wrapped_code.as_str());
     println!("----------------------------------------");
     print_warning("⚠ THIS IS A BETA FEATURE ⚠");
 
     // Return this conversation
-    convo.push_str(code.as_str());
+    convo.push_str(query.as_str());
 
     Ok(convo)
 }

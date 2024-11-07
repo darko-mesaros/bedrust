@@ -206,9 +206,26 @@ impl ConversationHistory {
                             value.value().as_str().unwrap_or("").to_string()
                         };
 
-                        // Check if the text is already wrapped in <pre><code>
-                        if text.starts_with("<pre><code") && text.ends_with("</code></pre>") {
-                            out.write(&text)?;
+                        // Parse so tha the code block is not really visible during the source code
+                        // shenaningans
+                        // NOTE: Here is, again, the silly edge case
+                        let (p1, p2) = ("<bedrust_be", "gin_source>");
+                        let (p3, p4) = ("</bedrust_en", "d_source>");
+                        let pattern = format!(r"{}{}\s*[\s\S]*?\s*{}{}", 
+                            regex::escape(p1), 
+                            regex::escape(p2),
+                            regex::escape(p3),
+                            regex::escape(p4)
+                        );
+                        let source_code_regex = Regex::new(&pattern).unwrap();
+                        // Replace the source code sections with empty string
+                        let text_without_source = source_code_regex.replace_all(&text, 
+                            r#"<div class="source-removed"><div class="source-removed-content">ℹ️ <span>The source code has been removed from the export</span></div></div>"#
+                        );
+                        // Check if already wrapped in HTML
+                        if text_without_source.starts_with("<pre><code") && 
+                           text_without_source.ends_with("</code></pre>") {
+                            out.write(&text_without_source)?;
                             return Ok(());
                         }
 
@@ -220,7 +237,7 @@ impl ConversationHistory {
                         let mut positions = Vec::new();
 
                         // Process each code block match
-                        for cap in code_block_regex.captures_iter(&text) {
+                        for cap in code_block_regex.captures_iter(&text_without_source) {
                             // Add everything before this code block with normal nl2br processing
                             let start = cap.get(0).unwrap().start();
                             let end = cap.get(0).unwrap().end();
@@ -236,7 +253,7 @@ impl ConversationHistory {
 
                         for (start, end, lang, code) in positions {
                             // Process any text before this code block, including inline code.
-                            let before_text = &text[last_pos..start];
+                            let before_text = &text_without_source[last_pos..start];
                             // Handle inline code in the text before the code block
                             let processed_before =
                                 process_inline_code(before_text, &inline_code_regex);
@@ -252,8 +269,8 @@ impl ConversationHistory {
                             last_pos = end;
                         }
 
-                        if last_pos < text.len() {
-                            let remaining = &text[last_pos..];
+                        if last_pos < text_without_source.len() {
+                            let remaining = &text_without_source[last_pos..];
                             let processed_remaining =
                                 process_inline_code(remaining, &inline_code_regex);
                             result.push_str(&processed_remaining.replace("\n", "<br>"));
