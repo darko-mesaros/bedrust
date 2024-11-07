@@ -454,7 +454,6 @@ pub async fn save_chat_history(
     } else {
         let title = ch.generate_title(client).await?;
         let new_filename = format!("{}.json", title);
-        println!("DEBUG: {}", new_filename);
         ch.title = Some(title.clone());
         (new_filename.clone(), save_dir.join(&new_filename))
     };
