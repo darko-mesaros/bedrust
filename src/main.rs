@@ -148,17 +148,15 @@ async fn main() -> Result<()> {
                 let filename = if let Some(ref file) = current_file {
                     save_chat_history(
                         Some(file),
-                        title.clone(),
-                        &conversation_history.messages,
                         &bedrock_runtime_client,
+                        &mut conversation_history,
                     )
                     .await?
                 } else {
                     match save_chat_history(
                         None,
-                        None,
-                        &conversation_history.messages,
                         &bedrock_runtime_client,
+                        &mut conversation_history,
                     )
                     .await
                     {
@@ -193,7 +191,6 @@ async fn main() -> Result<()> {
                             // sasving to it
                             // TODO: Make this work with SerializableMessage
                             Ok((content, filename, existing_title, summary)) => {
-                                // conversation_history = content.clone();
                                 conversation_history.messages = Some(content);
                                 conversation_history.title = Some(existing_title.clone());
                                 conversation_history.summary = Some(summary.clone());
@@ -220,6 +217,9 @@ async fn main() -> Result<()> {
                 utils::print_warning("/c\t \t - Clear current chat history");
                 utils::print_warning("/s\t \t - (BETA) Save chat history");
                 utils::print_warning("/r\t \t - (BETA) Recall and load a chat history");
+                utils::print_warning(
+                    "/h\t \t - (BETA) Export history as HTML(saves in current dir)",
+                );
                 utils::print_warning("/q\t \t - Quit");
                 continue;
             }

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
     fs,
-    io::{self, Write}
+    io::{self, Write},
 };
 
 use regex::Regex;
@@ -165,7 +165,7 @@ impl ConversationHistory {
         // history: Option<String>,
         messages: Option<Vec<SerializableMessage>>,
     ) -> ConversationHistory {
-        let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
+        let local = Local::now().format("%Y-%m-%d %H:%M"); // e.g. `2014-11-28T21:45:59.324310806+09:00`
         ConversationHistory {
             title,
             summary,
@@ -188,121 +188,135 @@ impl ConversationHistory {
     }
 
     // Generate HTML from the conversation
+    // TODO: Clean this up and make it dynamic so it saves into a centralized location
     pub fn save_as_html(&self) -> Result<(), anyhow::Error> {
-        // TODO: Generate a HTML page with the entire conversation
-        // Have the title at the top, along with the summary and the timestamp(?)
-        // Then just a list of all messages between the user and assistant.
-        // If there was code involved (like in the code chat feature) store that in a separate
-        // segment that is hidden as we do not need to have that taking up space (maybe a foldable
-        // div).
-        // Additionally, add options that we can quickly copy the source code if there is a source
-        // code block
-        
-        //println!("DEBUG: {}", &self.messages.as_ref().unwrap()[1].content.first().unwrap());
-        
         let mut handlebars = Handlebars::new();
         // Register a custom helper that handles arrays of strings
         handlebars.register_helper(
             "nl2br_with_code",
-            Box::new(|h: &handlebars::Helper,
-                     _: &handlebars::Handlebars,
-                     _: &handlebars::Context,
-                     _: &mut handlebars::RenderContext,
-                     out: &mut dyn handlebars::Output| {
-                if let Some(value) = h.param(0) {
-                    let text = if value.value().is_array() {
-                        value.value().as_array()
-                            .unwrap()
-                            .iter()
-                            .filter_map(|v| v.as_str())
-                            .collect::<Vec<_>>()
-                            .join("\n")
-                    } else {
-                        value.value().as_str().unwrap_or("").to_string()
-                    };
+            Box::new(
+                |h: &handlebars::Helper,
+                 _: &handlebars::Handlebars,
+                 _: &handlebars::Context,
+                 _: &mut handlebars::RenderContext,
+                 out: &mut dyn handlebars::Output| {
+                    if let Some(value) = h.param(0) {
+                        let text = if value.value().is_array() {
+                            value
+                                .value()
+                                .as_array()
+                                .unwrap()
+                                .iter()
+                                .filter_map(|v| v.as_str())
+                                .collect::<Vec<_>>()
+                                .join("\n")
+                        } else {
+                            value.value().as_str().unwrap_or("").to_string()
+                        };
 
-                    // Check if the text is already wrapped in <pre><code>
-                    if text.starts_with("<pre><code") && text.ends_with("</code></pre>") {
-                        out.write(&text)?;
-                        return Ok(());
-                    }
-
-                    let code_string_regex = Regex::new(r"`(\*)`").unwrap();
-
-                    // Regex for code blocks with optional language
-                    let code_block_regex = Regex::new(r"```(\w*)\n([\s\S]*?)\n```").unwrap();
-                    let mut last_pos = 0;
-                    let mut result = String::new();
-
-                    // Process each code block match
-                    for cap in code_block_regex.captures_iter(&text) {
-                        // Add everything before this code block with normal nl2br processing
-                        let start_pos = cap.get(0).unwrap().start();
-                        if start_pos > last_pos {
-                            result.push_str(&text[last_pos..start_pos].replace("\n", "<br>"));
+                        // Check if the text is already wrapped in <pre><code>
+                        if text.starts_with("<pre><code") && text.ends_with("</code></pre>") {
+                            out.write(&text)?;
+                            return Ok(());
                         }
 
-                        // Get language (if specified) and code content
-                        let language = &cap[1];
-                        let code = &cap[2].trim(); // Trim to remove extra newlines
+                        // Regex for code blocks with optional language
+                        let mut last_pos = 0;
+                        let mut result = String::new();
 
-                        // Build code block HTML
-                        let code_html = format!(
-                            r#"<pre><code class="language-{}">{}</code></pre>"#,
-                            if language.is_empty() { "plaintext" } else { language },
-                            html_escape::encode_text(code)
-                        );
-                        
-                        result.push_str(&code_html);
-                        last_pos = cap.get(0).unwrap().end();
+                        let code_block_regex = Regex::new(r"```(\w*)\n([\s\S]*?)\n```").unwrap();
+                        let mut positions = Vec::new();
+
+                        // Process each code block match
+                        for cap in code_block_regex.captures_iter(&text) {
+                            // Add everything before this code block with normal nl2br processing
+                            let start = cap.get(0).unwrap().start();
+                            let end = cap.get(0).unwrap().end();
+                            positions.push((
+                                start,
+                                end,
+                                cap.get(1).unwrap().as_str(),
+                                cap.get(2).unwrap().as_str(),
+                            ));
+                        }
+                        // Test out single code strings
+                        let inline_code_regex = Regex::new(r"`([^`]+)`").unwrap();
+
+                        for (start, end, lang, code) in positions {
+                            // Process any text before this code block, including inline code.
+                            let before_text = &text[last_pos..start];
+                            // Handle inline code in the text before the code block
+                            let processed_before =
+                                process_inline_code(before_text, &inline_code_regex);
+                            result.push_str(&processed_before.replace("\n", "<br>"));
+
+                            // Add the code block
+                            result.push_str(&format!(
+                                r#"<pre><code class="language-{}">{}</code></pre>"#,
+                                if lang.is_empty() { "plaintext" } else { lang },
+                                html_escape::encode_text(code)
+                            ));
+
+                            last_pos = end;
+                        }
+
+                        if last_pos < text.len() {
+                            let remaining = &text[last_pos..];
+                            let processed_remaining =
+                                process_inline_code(remaining, &inline_code_regex);
+                            result.push_str(&processed_remaining.replace("\n", "<br>"));
+                        }
+
+                        out.write(&result)?;
                     }
-
-                    // Add any remaining text after the last code block
-                    if last_pos < text.len() {
-                        result.push_str(&text[last_pos..].replace("\n", "<br>"));
-                    }
-
-                    out.write(&result)?;
-                }
-                Ok(())
-            }),
+                    Ok(())
+                },
+            ),
         );
 
         // Converts titles from hello_to_the_world to Hello To The World
         // Needs the convert_case crate
         handlebars.register_helper(
             "format_title",
-            Box::new(|h: &handlebars::Helper,
-                     _: &handlebars::Handlebars,
-                     _: &handlebars::Context,
-                     _: &mut handlebars::RenderContext,
-                     out: &mut dyn handlebars::Output| {
-                if let Some(value) = h.param(0) {
-                    if let Some(text) = value.value().as_str() {
-                        // Convert from any case to Title Case
-                        let formatted = text.to_case(Case::Title);
-                        out.write(&formatted)?;
+            Box::new(
+                |h: &handlebars::Helper,
+                 _: &handlebars::Handlebars,
+                 _: &handlebars::Context,
+                 _: &mut handlebars::RenderContext,
+                 out: &mut dyn handlebars::Output| {
+                    if let Some(value) = h.param(0) {
+                        if let Some(text) = value.value().as_str() {
+                            // Convert from any case to Title Case
+                            let formatted = text.to_case(Case::Title);
+                            out.write(&formatted)?;
+                        }
                     }
-                }
-                Ok(())
-            }),
+                    Ok(())
+                },
+            ),
         );
 
-        match handlebars.register_template_string("chat_export", crate::constants::HTML_TW_TEMPLATE) {
+        match handlebars.register_template_string("chat_export", crate::constants::HTML_TW_TEMPLATE)
+        {
             Ok(_) => {
                 match handlebars.render("chat_export", &self) {
                     Ok(render) => {
                         std::fs::write("conversation.html", render)?;
                         println!("Succesfully saved the conversation to conversation.html");
-                    },
-                    Err(e) => eprintln!("Error: Something went wrong with rendering the HTML template: {}",e)
+                    }
+                    Err(e) => eprintln!(
+                        "Error: Something went wrong with rendering the HTML template: {}",
+                        e
+                    ),
                 };
-            },
-            Err(e) => eprintln!("Error: Something went wrong with Registering the template: {}",e)
+            }
+            Err(e) => eprintln!(
+                "Error: Something went wrong with Registering the template: {}",
+                e
+            ),
         };
 
         Ok(())
-        
     }
 
     // Clearing the current chat history - but I feel there is a better way to do this
@@ -411,27 +425,13 @@ impl ConversationHistory {
 
 // TODO: Name the chat histories somehow
 pub async fn save_chat_history(
-    // conversation_history: &str,
     filename: Option<&str>,
-    title: Option<String>,
-    messages: &Option<Vec<SerializableMessage>>,
     client: &aws_sdk_bedrockruntime::Client,
+    ch: &mut ConversationHistory,
 ) -> Result<String, anyhow::Error> {
     let home_dir = home_dir().expect("Failed to get HOME directory");
     let save_dir = home_dir.join(format!(".config/{}/chats", constants::CONFIG_DIR_NAME));
     fs::create_dir_all(&save_dir)?;
-
-    // create ConversationHistory Struct
-    let mut ch = ConversationHistory::new(
-        if let Some(title) = title {
-            Some(title)
-        } else {
-            Some("title".into())
-        },
-        Some("summary".to_string()),
-        // Some(conversation_history.to_string()),
-        messages.clone(),
-    );
 
     // generate the conversation summary
     ch.summary = Some(ch.generate_summary(client).await?);
@@ -532,4 +532,33 @@ pub fn list_chat_histories() -> Result<Vec<String>, anyhow::Error> {
 
     chat_files.sort_by(|a, b| b.cmp(a)); // Sort in descending order (newest first)
     Ok(chat_files)
+}
+
+// Helper function to process inline code - for HTML creation
+fn process_inline_code(text: &str, regex: &Regex) -> String {
+    let mut result = String::new();
+    let mut last_pos = 0;
+
+    for cap in regex.captures_iter(text) {
+        let full_match = cap.get(0).unwrap();
+        let code_content = cap.get(1).unwrap();
+
+        // Add text before this inline code
+        result.push_str(&text[last_pos..full_match.start()]);
+
+        // Add the inline code with styling
+        result.push_str(&format!(
+            r#"<code class="language-plaintext inline-code px-1 py-0.5 rounded bg-gray-100 text-sm font-mono">{}</code>"#,
+            html_escape::encode_text(code_content.as_str())
+        ));
+
+        last_pos = full_match.end();
+    }
+
+    // Add any remaining text
+    if last_pos < text.len() {
+        result.push_str(&text[last_pos..]);
+    }
+
+    result
 }

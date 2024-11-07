@@ -223,7 +223,13 @@ pub static HTML_TW_TEMPLATE: &str = r#"
             height: 1rem;
             margin-right: 0.25rem;
         }
-
+        .inline-code {
+            background-color: rgb(243 244 246);
+            border-radius: 0.25rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.875em;
+            padding: 0.2em 0.4em;
+        }
         /* Add padding to accommodate the copy button */
         pre[class*="language-"] {
             margin: 1em 0;
@@ -237,6 +243,18 @@ pub static HTML_TW_TEMPLATE: &str = r#"
 </head>
 <body class="min-h-screen p-4 md:p-8">
     <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden"> <!-- Added overflow-hidden -->
+        <!-- New Top Banner -->
+        <div class="bg-slate-900 p-4 flex items-center">
+            <div class="flex items-center space-x-2">
+                <span class="text-xl font-bold text-white">Bedrust</span>
+                <span class="text-2xl">🧠</span>
+                <span class="text-2xl">🦀</span>
+            </div>
+            <!-- Optional: Add a right-side element -->
+            <div class="ml-auto text-sm text-gray-400">
+                Generated on: {{timestamp}}
+            </div>
+        </div>
         <!-- New Gradient Title Section -->
         <div class="bg-gradient-to-r from-orange-400 via-pink-500 to-blue-500 p-8 relative">
             <div class="relative z-10">
