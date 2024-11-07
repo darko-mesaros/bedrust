@@ -8,8 +8,21 @@ use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
     fs,
-    io::{self, Write},
+    io::{self, Write}
 };
+
+use regex::Regex;
+
+use handlebars::{
+    Handlebars,
+    // Helper,
+    // Context,
+    // RenderContext,
+    // Output,
+    // HelperResult
+};
+
+use convert_case::{Case, Casing};
 
 use colored::*;
 
@@ -175,7 +188,7 @@ impl ConversationHistory {
     }
 
     // Generate HTML from the conversation
-    pub fn save_as_html(&self) {
+    pub fn save_as_html(&self) -> Result<(), anyhow::Error> {
         // TODO: Generate a HTML page with the entire conversation
         // Have the title at the top, along with the summary and the timestamp(?)
         // Then just a list of all messages between the user and assistant.
@@ -184,7 +197,112 @@ impl ConversationHistory {
         // div).
         // Additionally, add options that we can quickly copy the source code if there is a source
         // code block
+        
+        //println!("DEBUG: {}", &self.messages.as_ref().unwrap()[1].content.first().unwrap());
+        
+        let mut handlebars = Handlebars::new();
+        // Register a custom helper that handles arrays of strings
+        handlebars.register_helper(
+            "nl2br_with_code",
+            Box::new(|h: &handlebars::Helper,
+                     _: &handlebars::Handlebars,
+                     _: &handlebars::Context,
+                     _: &mut handlebars::RenderContext,
+                     out: &mut dyn handlebars::Output| {
+                if let Some(value) = h.param(0) {
+                    let text = if value.value().is_array() {
+                        value.value().as_array()
+                            .unwrap()
+                            .iter()
+                            .filter_map(|v| v.as_str())
+                            .collect::<Vec<_>>()
+                            .join("\n")
+                    } else {
+                        value.value().as_str().unwrap_or("").to_string()
+                    };
 
+                    // Check if the text is already wrapped in <pre><code>
+                    if text.starts_with("<pre><code") && text.ends_with("</code></pre>") {
+                        out.write(&text)?;
+                        return Ok(());
+                    }
+
+                    let code_string_regex = Regex::new(r"`(\*)`").unwrap();
+
+                    // Regex for code blocks with optional language
+                    let code_block_regex = Regex::new(r"```(\w*)\n([\s\S]*?)\n```").unwrap();
+                    let mut last_pos = 0;
+                    let mut result = String::new();
+
+                    // Process each code block match
+                    for cap in code_block_regex.captures_iter(&text) {
+                        // Add everything before this code block with normal nl2br processing
+                        let start_pos = cap.get(0).unwrap().start();
+                        if start_pos > last_pos {
+                            result.push_str(&text[last_pos..start_pos].replace("\n", "<br>"));
+                        }
+
+                        // Get language (if specified) and code content
+                        let language = &cap[1];
+                        let code = &cap[2].trim(); // Trim to remove extra newlines
+
+                        // Build code block HTML
+                        let code_html = format!(
+                            r#"<pre><code class="language-{}">{}</code></pre>"#,
+                            if language.is_empty() { "plaintext" } else { language },
+                            html_escape::encode_text(code)
+                        );
+                        
+                        result.push_str(&code_html);
+                        last_pos = cap.get(0).unwrap().end();
+                    }
+
+                    // Add any remaining text after the last code block
+                    if last_pos < text.len() {
+                        result.push_str(&text[last_pos..].replace("\n", "<br>"));
+                    }
+
+                    out.write(&result)?;
+                }
+                Ok(())
+            }),
+        );
+
+        // Converts titles from hello_to_the_world to Hello To The World
+        // Needs the convert_case crate
+        handlebars.register_helper(
+            "format_title",
+            Box::new(|h: &handlebars::Helper,
+                     _: &handlebars::Handlebars,
+                     _: &handlebars::Context,
+                     _: &mut handlebars::RenderContext,
+                     out: &mut dyn handlebars::Output| {
+                if let Some(value) = h.param(0) {
+                    if let Some(text) = value.value().as_str() {
+                        // Convert from any case to Title Case
+                        let formatted = text.to_case(Case::Title);
+                        out.write(&formatted)?;
+                    }
+                }
+                Ok(())
+            }),
+        );
+
+        match handlebars.register_template_string("chat_export", crate::constants::HTML_TW_TEMPLATE) {
+            Ok(_) => {
+                match handlebars.render("chat_export", &self) {
+                    Ok(render) => {
+                        std::fs::write("conversation.html", render)?;
+                        println!("Succesfully saved the conversation to conversation.html");
+                    },
+                    Err(e) => eprintln!("Error: Something went wrong with rendering the HTML template: {}",e)
+                };
+            },
+            Err(e) => eprintln!("Error: Something went wrong with Registering the template: {}",e)
+        };
+
+        Ok(())
+        
     }
 
     // Clearing the current chat history - but I feel there is a better way to do this
@@ -327,6 +445,7 @@ pub async fn save_chat_history(
     } else {
         let title = ch.generate_title(client).await?;
         let new_filename = format!("{}.json", title);
+        println!("DEBUG: {}", new_filename);
         ch.title = Some(title.clone());
         (new_filename.clone(), save_dir.join(&new_filename))
     };

@@ -131,6 +131,9 @@ async fn main() -> Result<()> {
             if question == "/q" {
                 println!("Bye!");
                 break;
+            } else if question == "/h" {
+                conversation_history.save_as_html()?;
+                continue;
             } else if question == "/c" {
                 println!("Clearing current chat history");
                 conversation_history.clear();
@@ -192,6 +195,8 @@ async fn main() -> Result<()> {
                             Ok((content, filename, existing_title, summary)) => {
                                 // conversation_history = content.clone();
                                 conversation_history.messages = Some(content);
+                                conversation_history.title = Some(existing_title.clone());
+                                conversation_history.summary = Some(summary.clone());
                                 current_file = Some(filename);
                                 title = Some(existing_title);
                                 utils::print_warning("----------------------------------------");
