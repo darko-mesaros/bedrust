@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO: Better code testing
 - TODO: Handle longer pastes better
 
+## [0.8.3] - 2024-11-14
+
+### Fixed
+- There was an issue where the config checker was still looking for the model config file
+
 ## [0.8.2] - 2024-11-07
 ### Added
 - BETA: You can export conversations as HTML now

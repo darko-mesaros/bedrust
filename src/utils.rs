@@ -192,9 +192,8 @@ pub fn check_for_config() -> Result<bool, anyhow::Error> {
     let home_dir = home_dir().expect("Failed to get HOME directory");
     let config_dir = home_dir.join(".config/bedrust");
     let bedrust_config_file_path = config_dir.join("bedrust_config.ron");
-    let model_config_file_path = config_dir.join("model_config.ron");
 
-    if !bedrust_config_file_path.exists() || !model_config_file_path.exists() {
+    if !bedrust_config_file_path.exists() {
         Ok(false)
     } else {
         Ok(true)
