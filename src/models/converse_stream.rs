@@ -30,6 +30,7 @@ impl From<&ConverseStreamError> for BedrockConverseStreamError {
             match value {
                 ConverseStreamError::ModelTimeoutException(_) => "Model took too long",
                 ConverseStreamError::ModelNotReadyException(_) => "Model is not ready",
+                ConverseStreamError::ThrottlingException(_) => "Your request was throttled, please check your service quotas",
                 _ => "Unknown",
             }
             .into(),
@@ -90,17 +91,9 @@ pub async fn call_converse_stream(
         .converse_stream()
         .model_id(model_id)
         .set_messages(Some(msg))
-        // .messages(
-        //     Message::builder()
-        //         .role(ConversationRole::User)
-        //         .content(ContentBlock::Text("".to_string()))
-        //         .build()
-        //         .map_err(|_| "Failed to build message")?,
-        // )
         .inference_config(inference_parameters)
         .send()
         .await;
-    //println!("DEBUG: {:#?}", &response);
 
     let mut stream = match response {
         Ok(output) => Ok(output.stream),
@@ -142,9 +135,3 @@ pub async fn call_converse_stream(
 
     Ok(convo)
 }
-
-// Call Call
-
-// No-Stream Response
-
-// Stream Response

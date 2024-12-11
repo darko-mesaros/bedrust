@@ -12,6 +12,7 @@ Currently supporting the following models:
 - Claude 3.5 Sonnet
 - Claude V2
 - Claude V3 Sonnet
+- Claude V3 Opus
 - Claude V3 Haiku
 - Llama2 70B
 - LLama3.1 models
@@ -19,6 +20,7 @@ Currently supporting the following models:
 - Jurrasic 2 Ultra
 - Titan Text Express V1
 - Mistral AI models (Mixtral, Mistral7b and Mistral Large 1 and 2)
+- Amazon Nova models
 
 ## Getting Started
 
@@ -26,7 +28,7 @@ To get started using this you need to do a few things:
 
 ### Get AWS credentials configured locally ☁️
 
-To be able to interact with [Amazon Bedrock]() you need to have a set of AWS Credentials on the machine **Bedrust** will run on. The easiest way to get this set up, is by configuring the [AWS CLI](https://aws.amazon.com/cli/). Make sure to install the AWS CLI, and run the `aws configure` [command](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) to set your credentials.
+To be able to interact with [Amazon Bedrock](https://aws.amazon.com/bedrock/) you need to have a set of AWS Credentials on the machine **Bedrust** will run on. The easiest way to get this set up, is by configuring the [AWS CLI](https://aws.amazon.com/cli/). Make sure to install the AWS CLI, and run the `aws configure` [command](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) to set your credentials.
 
 To verify if you have your AWS credentials set correctly, you can run `aws sts get-caller-identity`:
 ```bash
@@ -95,7 +97,7 @@ Usage: bedrust [OPTIONS]
 
 Options:
       --init
-  -m, --model-id <MODEL_ID>  [possible values: llama270b, llama31405b-instruct, llama3170b-instruct, llama318b-instruct, cohere-command, claude-v2, claude-v21, claude-v3-sonnet, claude-v3-haiku, claude-v35-sonnet, claude-v352-sonnet, claude-v35-haiku, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct, mistral-large, mistral-large2]
+  -m, --model-id <MODEL_ID>  [possible values: llama270b, llama31405b-instruct, llama3170b-instruct, llama318b-instruct, cohere-command, claude-v2, claude-v21, claude-v3-opus, claude-v3-sonnet, claude-v3-haiku, claude-v35-sonnet, claude-v352-sonnet, claude-v35-haiku, jurrasic2-ultra, titan-text-express-v1, mixtral8x7b-instruct, mistral7b-instruct, mistral-large, mistral-large2, nova-micro, nova-lite, nova-pro]
   -c, --caption <CAPTION>
   -s, --source <SOURCE>
   -x
