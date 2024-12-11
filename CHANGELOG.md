@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO: Better code testing
 - TODO: Handle longer pastes better
 
+## [0.8.4] - 2024-12-11
+
+### Changed
+- Added support for the latest Amazon Nova models
+- Added support (finally) for Claude 3 Opus
+- You now get an error when your call is being throttled (Service quota issues)
+- Cleaned up some stale code and removed commented out lines that serve no purpose
+
 ## [0.8.3] - 2024-11-14
 
 ### Fixed

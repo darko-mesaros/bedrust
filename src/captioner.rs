@@ -150,8 +150,6 @@ pub fn load_image(p: &PathBuf) -> Result<Vec<u8>, anyhow::Error> {
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer)?;
 
-    //let base64_img = general_purpose::STANDARD.encode(buffer);
-    //Ok(base64_img)
     Ok(buffer)
 }
 

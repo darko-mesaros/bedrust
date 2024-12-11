@@ -64,6 +64,7 @@ pub enum ArgModels {
     CohereCommand,
     ClaudeV2,
     ClaudeV21,
+    ClaudeV3Opus,
     ClaudeV3Sonnet,
     ClaudeV3Haiku,
     ClaudeV35Sonnet,
@@ -75,6 +76,9 @@ pub enum ArgModels {
     Mistral7bInstruct,
     MistralLarge,
     MistralLarge2,
+    NovaMicro,
+    NovaLite,
+    NovaPro,
 }
 
 impl Display for ArgModels {
@@ -91,6 +95,7 @@ impl ArgModels {
             ArgModels::ClaudeV3Haiku => "anthropic.claude-3-haiku-20240307-v1:0",
             ArgModels::ClaudeV35Haiku => "anthropic.claude-3-5-haiku-20241022-v1:0",
             ArgModels::ClaudeV3Sonnet => "anthropic.claude-3-sonnet-20240229-v1:0",
+            ArgModels::ClaudeV3Opus => "anthropic.claude-3-opus-20240229-v1:0",
             ArgModels::ClaudeV35Sonnet => "anthropic.claude-3-5-sonnet-20240620-v1:0",
             ArgModels::ClaudeV352Sonnet => "anthropic.claude-3-5-sonnet-20241022-v2:0",
             ArgModels::Llama270b => "meta.llama2-70b-chat-v1",
@@ -104,6 +109,9 @@ impl ArgModels {
             ArgModels::Mistral7bInstruct => "mistral.mistral-7b-instruct-v0:2",
             ArgModels::MistralLarge => "mistral.mistral-large-2402-v1:0",
             ArgModels::MistralLarge2 => "mistral.mistral-large-2407-v1:0",
+            ArgModels::NovaMicro => "us.amazon.nova-micro-v1:0",
+            ArgModels::NovaLite => "us.amazon.nova-lite-v1:0",
+            ArgModels::NovaPro => "us.amazon.nova-pro-v1:0",
         }
     }
 }
