@@ -40,7 +40,7 @@ pub async fn code_chat_process(
     // NOTE: Here is something stupid for my edge case
     let (p1, p2) = ("<bedrust_be", "gin_source>");
     let (p3, p4) = ("</bedrust_en", "d_source>");
-    let wrapped_code = format!("{}{}{}{}{}",p1, p2, code, p3, p4);
+    let wrapped_code = format!("{}{}{}{}{}", p1, p2, code, p3, p4);
 
     let query = constants::CODE_CHAT_PROMPT.replace("{SOURCE_CODE}", wrapped_code.as_str());
     println!("----------------------------------------");

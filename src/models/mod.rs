@@ -43,7 +43,7 @@ pub async fn check_model_features(
         "us.amazon.nova-micro-v1:0" => "amazon.nova-micro-v1:0",
         "us.amazon.nova-lite-v1:0" => "amazon.nova-lite-v1:0",
         "us.amazon.nova-pro-v1:0" => "amazon.nova-pro-v1:0",
-        _ => m
+        _ => m,
     };
 
     let call = c.get_foundation_model().model_identifier(model_id);
@@ -52,7 +52,6 @@ pub async fn check_model_features(
         .model_details()
         .ok_or_else(|| anyhow!("Unable to get model details"))?
         .clone();
-
 
     match feature {
         ModelFeatures::Images => match model_details.input_modalities {

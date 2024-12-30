@@ -30,7 +30,9 @@ impl From<&ConverseStreamError> for BedrockConverseStreamError {
             match value {
                 ConverseStreamError::ModelTimeoutException(_) => "Model took too long",
                 ConverseStreamError::ModelNotReadyException(_) => "Model is not ready",
-                ConverseStreamError::ThrottlingException(_) => "Your request was throttled, please check your service quotas",
+                ConverseStreamError::ThrottlingException(_) => {
+                    "Your request was throttled, please check your service quotas"
+                }
                 _ => "Unknown",
             }
             .into(),
