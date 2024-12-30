@@ -3,6 +3,9 @@ use anyhow::anyhow;
 use aws_sdk_bedrockruntime::types::{ContentBlock, ConversationRole, Message};
 use dialoguer::Confirm;
 
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+
 use crate::utils::print_warning;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -212,14 +215,14 @@ impl ConversationHistory {
                         let (p1, p2) = ("<bedrust_be", "gin_source>");
                         let (p3, p4) = ("</bedrust_en", "d_source>");
                         let pattern = format!(r"{}{}\s*[\s\S]*?\s*{}{}", 
-                            regex::escape(p1), 
+                            regex::escape(p1),
                             regex::escape(p2),
                             regex::escape(p3),
                             regex::escape(p4)
                         );
                         let source_code_regex = Regex::new(&pattern).unwrap();
                         // Replace the source code sections with empty string
-                        let text_without_source = source_code_regex.replace_all(&text, 
+                        let text_without_source = source_code_regex.replace_all(&text,
                             r#"<div class="source-removed"><div class="source-removed-content">ℹ️ <span>The source code has been removed from the export</span></div></div>"#
                         );
                         // Check if already wrapped in HTML
@@ -364,7 +367,14 @@ impl ConversationHistory {
             {
                 Ok(response) => {
                     println!("✅ | Done ");
-                    return Ok(response);
+                    // Generate a random suffix
+                    let random_string: String = thread_rng()
+                        .sample_iter(Alphanumeric) // These are ASCII u8
+                        .take(5)
+                        .map(char::from) // Conver the u8 ASCII into chars
+                        .collect();
+                    let name = format!("{}-{}", response, random_string);
+                    return Ok(name);
                 }
                 Err(e) => {
                     // if an error occurs, print it and retry

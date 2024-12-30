@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO: Better code testing
 - TODO: Handle longer pastes better
 
+## [0.8.5] - 2024-12-30
+
+### Changed
+- Saving chats now have a random 5 character suffix added to them. As there was a good chance that the name would be the same for similar conversations.
+
 ## [0.8.4] - 2024-12-11
 
 ### Changed
