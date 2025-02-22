@@ -369,15 +369,6 @@ impl ConversationHistory {
             {
                 Ok(response) => {
                     println!("✅ | Done ");
-                    // Generate a random suffix
-                    // let random_string: String = thread_rng()
-                    //     .sample_iter(Alphanumeric) // These are ASCII u8
-                    //     .take(5)
-                    //     .map(char::from) // Conver the u8 ASCII into chars
-                    //     .collect();
-                    // let name = format!("{}-{}", response, random_string);
-                    //let name = format!("{}-{}", response, random_string);
-                    // return Ok(name);
                     return Ok(response);
                 }
                 Err(e) => {
