@@ -74,7 +74,7 @@ pub async fn caption_process(
                     println!("⌛ | Processing images in: {:?}", &path);
                     let files = list_files_in_path_by_extension(
                         path,
-                        bedrust_config.supported_images.clone(),
+                        bedrust_config.captioning.supported_images.clone(),
                     )?;
                     println!("🔎 | Found {:?} images in path.", &files.len());
 
@@ -86,7 +86,7 @@ pub async fn caption_process(
                     caption_image(
                         &mut images,
                         model_id,
-                        &bedrust_config.caption_prompt,
+                        &bedrust_config.captioning.caption_prompt,
                         bedrockruntime_client,
                         bedrock_client,
                     )
@@ -254,7 +254,7 @@ pub fn write_captions(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::load_bedrust_config;
+    use crate::config::BedrustConfig;
     use base64::{engine::general_purpose, Engine as _};
     use image::{Rgb, RgbImage};
     use rand::distributions::{Alphanumeric, DistString};
@@ -283,10 +283,11 @@ mod tests {
         fs::File::create(&file5_path).unwrap();
 
         // load supported file extensions
-        let config = load_bedrust_config().unwrap();
+        // FIX: Handle the unwrap
+        let config = BedrustConfig::load_with_migration().unwrap();
 
         let list =
-            list_files_in_path_by_extension(PathBuf::from(dir_path), config.supported_images);
+            list_files_in_path_by_extension(PathBuf::from(dir_path), config.captioning.supported_images);
         let expected_vec = vec![
             PathBuf::from(&file1_path),
             PathBuf::from(&file3_path),

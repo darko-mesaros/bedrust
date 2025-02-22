@@ -84,6 +84,13 @@ pub static BEDRUST_CONFIG_FILE_NAME: &str = "bedrust_config.ron";
 pub static INSTRUCTION_FILE: &str = ".bedrustrules";
 pub static CHAT_EXPORTS_DIR: &str = "chat_exports";
 
+// DEFAULT CONFIGS
+pub static DEFAULT_TEMPERATURE: f32 = 0.5;
+pub static DEFAULT_MAX_TOKENS: i32 = 2048;
+pub static DEFAULT_TOP_P: f32 = 0.8;
+pub static DEFAULT_SUPPORTED_IMAGES: &[&str] = &["jpg", "jpeg", "png", "bmp"];
+pub static DEFAULT_CAPTION_PROMPT: &str = "Please caption the following image for the sake of accessibility. Return just the caption, and nothing else. Keep it clean, and under 100 words.";
+
 // UPDATED: 2024-08-02
 pub static BEDRUST_CONFIG_FILE: &str = r#"BedrustConfig(
   // define what AWS profile to use

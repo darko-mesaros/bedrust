@@ -21,12 +21,11 @@ use bedrust::chat::{
     ConversationHistory,
 };
 use clap::Parser;
-use config::check_for_config;
+use config::BedrustConfig;
 
 use bedrust::code::code_chat_process;
 use bedrust::models::converse_stream::call_converse_stream;
 
-use crate::config::load_bedrust_config;
 
 // TODO:
 // So far I've implemented the converse API for general purpose chat and the code chat.
@@ -50,25 +49,26 @@ async fn main() -> Result<()> {
     let arguments = utils::Args::parse();
     // Checking for the `--init` flag and then initializing the configuration
     if arguments.init {
-        config::prompt_init_config()?;
+        BedrustConfig::prompt_init()?;
+        std::process::exit(0);
     }
-    // checking if the configuration files exist
-    if !check_for_config()? {
-        // or die
-        utils::print_no_config_warning();
-    }
+    // // checking if the configuration files exist
+    // if !BedrustConfig::config_exists()? {
+    //     // or die
+    //     utils::print_no_config_warning();
+    // }
     // load bedrust config file
-    let bedrust_config = load_bedrust_config()?;
+    let bedrust_config = BedrustConfig::load_with_migration()?;
 
     // configuring the SDK
-    let config = configure_aws(String::from(constants::FALLBACK_REGION), &bedrust_config.aws_profile).await;
+    let config = configure_aws(String::from(constants::FALLBACK_REGION), &bedrust_config.aws.profile).await;
     // setup the bedrock-runtime client
     let bedrock_runtime_client = aws_sdk_bedrockruntime::Client::new(&config);
     // setup the bedrock client
     let bedrock_client = aws_sdk_bedrock::Client::new(&config);
 
     //let question = "Which songs are listed in the youtube video 'evolution of dance'?";
-    let model_id = arguments.model_id.or(bedrust_config.default_model);
+    let model_id = arguments.model_id.or(bedrust_config.app.default_model);
     let model_id = match model_id {
         Some(model_id) => model_id,
         None => prompt_for_model_selection()?,
@@ -77,9 +77,9 @@ async fn main() -> Result<()> {
 
     // === DEFAULT INFERENCE PARAMETERS ===
     let inference_parameters = InferenceConfiguration::builder()
-        .max_tokens(bedrust_config.inference_params.max_tokens)
-        .top_p(bedrust_config.inference_params.top_p)
-        .temperature(bedrust_config.inference_params.temperature)
+        .max_tokens(bedrust_config.inference.max_tokens)
+        .top_p(bedrust_config.inference.top_p)
+        .temperature(bedrust_config.inference.temperature)
         .build();
 
     //  === CAPTIONING RUN ===

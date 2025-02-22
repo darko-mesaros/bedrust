@@ -13,7 +13,7 @@ use dirs::home_dir;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
-use crate::config::load_bedrust_config;
+use crate::config::BedrustConfig;
 use crate::constants;
 
 // ######################################## ARGUMENT PARSING
@@ -104,8 +104,10 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
     let config_dir = home_dir.join(format!(".config/{}", constants::CONFIG_DIR_NAME));
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
 
+    let config = BedrustConfig::load_with_migration()?;
+
     // test if show_banner is true
-    if load_bedrust_config()?.show_banner {
+    if config.app.show_banner {
         let figlet_font_file_path = config_dir.join(constants::FIGLET_FONT_FILENAME);
         let figlet_path_str = figlet_font_file_path
             .as_path()
