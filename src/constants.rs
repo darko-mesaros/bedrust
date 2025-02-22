@@ -2,6 +2,9 @@
 use aws_sdk_bedrockruntime::types::InferenceConfiguration;
 use lazy_static::lazy_static;
 
+// FILENAMES
+pub static INSTRUCTION_FILE: &str = ".bedrustrules";
+
 // PROMPTS
 // TODO: Move this to a Systemprompt
 pub static CODE_CHAT_PROMPT: &str = r#"

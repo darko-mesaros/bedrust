@@ -33,8 +33,6 @@ pub async fn code_chat_process(
     );
     println!("----------------------------------------");
     let mut convo = String::new();
-    //convo.push_str(constants::CODE_CHAT_PROMPT);
-
     let code = code_chat(code_path.clone().to_path_buf(), bedrock_runtime_client).await?;
 
     // NOTE: Here is something stupid for my edge case
@@ -42,7 +40,26 @@ pub async fn code_chat_process(
     let (p3, p4) = ("</bedrust_en", "d_source>");
     let wrapped_code = format!("{}{}{}{}{}", p1, p2, code, p3, p4);
 
-    let query = constants::CODE_CHAT_PROMPT.replace("{SOURCE_CODE}", wrapped_code.as_str());
+    // Check if `.bedrustrules` exists
+    let br_path = code_path.join(constants::INSTRUCTION_FILE);
+    let query = match br_path.exists() && br_path.is_file() { 
+        true => {
+            // It's here load it instead of the default system prompt
+            // Load the file
+            let mut br_rules = fs::read_to_string(br_path)?;
+            br_rules.push_str(r#"
+Here are the files:
+<SOURCE_CODE_BEDRUST>{SOURCE_CODE}</SOURCE_CODE_BEDRUST>
+"#);
+        br_rules.replace("{SOURCE_CODE}", wrapped_code.as_str())
+        },
+        false => {
+            // Nope, just use the default system prompt
+            constants::CODE_CHAT_PROMPT.replace("{SOURCE_CODE}", wrapped_code.as_str())
+        }
+    };
+
+
     println!("----------------------------------------");
     print_warning("⚠ THIS IS A BETA FEATURE ⚠");
 
@@ -116,13 +133,13 @@ fn get_all_files(
     let files: Vec<_> = walker
         .filter_map(Result::ok)
         .filter(|entry| {
-            let is_file = entry.file_type().map_or(false, |ft| ft.is_file());
+            let is_file = entry.file_type().is_some_and(|ft| ft.is_file());
             let matches_extension = ext.as_ref().map_or(true, |extensions| {
                 entry
                     .path()
                     .extension()
                     .and_then(|ext| ext.to_str())
-                    .map_or(false, |ext| extensions.contains(&ext.to_string()))
+                    .is_some_and(|ext| extensions.contains(&ext.to_string()))
             });
             let is_not_ignored = !is_hidden(entry);
 

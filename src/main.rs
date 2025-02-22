@@ -101,7 +101,7 @@ async fn main() -> Result<()> {
         utils::hello_header("Bedrust")?;
 
         let mut message_count = 0;
-        let mut conversation_history = ConversationHistory::new(None, None, None);
+        let mut conversation_history = ConversationHistory::new(None, None, None, None);
         let mut current_file: Option<String> = None;
 
         //  === BETA: SOURCE CODE CHAT ===
