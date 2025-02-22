@@ -19,11 +19,14 @@ use bedrust::chat::{
     list_chat_histories, load_chat_history, print_conversation_history, save_chat_history,
     ConversationHistory,
 };
-use bedrust::utils::{check_for_config, print_warning};
+use bedrust::utils::print_warning;
 use clap::Parser;
+use config::check_for_config;
 
 use bedrust::code::code_chat_process;
 use bedrust::models::converse_stream::call_converse_stream;
+
+use crate::config::load_bedrust_config;
 
 // TODO:
 // So far I've implemented the converse API for general purpose chat and the code chat.
@@ -61,7 +64,7 @@ async fn main() -> Result<()> {
         std::process::exit(1);
     }
     // load bedrust config file
-    let bedrust_config = utils::load_bedrust_config()?;
+    let bedrust_config = load_bedrust_config()?;
 
     // configuring the SDK
     let config = configure_aws(String::from("us-east-1"), &bedrust_config.aws_profile).await;
