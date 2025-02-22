@@ -14,7 +14,7 @@ pub struct BedrustConfig {
     pub supported_images: Vec<String>,
     pub caption_prompt: String,
     pub default_model: Option<ArgModels>,
-    // FIX: Implement a better way for configuration defaults
+    // NOTE: There must be a better way for configuration defaults
     // for now if there is no configuration line use true
     // This is because the Serde default is `false`
     #[serde(default = "_default_true")]

@@ -7,6 +7,7 @@ use aws_sdk_bedrockruntime::types::ConversationRole;
 use aws_sdk_bedrockruntime::types::InferenceConfiguration;
 use aws_sdk_bedrockruntime::types::Message;
 use bedrust::config;
+use bedrust::constants;
 use bedrust::utils;
 use colored::*;
 use dialoguer::{theme::ColorfulTheme, FuzzySelect};
@@ -67,7 +68,7 @@ async fn main() -> Result<()> {
     let bedrust_config = load_bedrust_config()?;
 
     // configuring the SDK
-    let config = configure_aws(String::from("us-east-1"), &bedrust_config.aws_profile).await;
+    let config = configure_aws(String::from(constants::FALLBACK_REGION), &bedrust_config.aws_profile).await;
     // setup the bedrock-runtime client
     let bedrock_runtime_client = aws_sdk_bedrockruntime::Client::new(&config);
     // setup the bedrock client

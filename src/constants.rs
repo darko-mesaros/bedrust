@@ -74,46 +74,7 @@ lazy_static! {
 // FIX: the model id is hardcoded, we need to make this configurable
 pub static PROJECT_GUESS_MODEL_ID: &str = "anthropic.claude-3-haiku-20240307-v1:0";
 pub static CONVERSATION_HISTORY_MODEL_ID: &str = "anthropic.claude-3-haiku-20240307-v1:0";
-pub static CODE_IGNORE_DIRS: &[&str] = &[
-    // Rust
-    "target",
-    // JavaScript/TypeScript
-    "node_modules",
-    "dist",
-    "build",
-    // Python
-    "__pycache__",
-    ".tox",
-    "venv",
-    ".pytest_cache",
-    // Java
-    "target",
-    "bin",
-    ".gradle",
-    ".mvn",
-    // C/C++
-    "obj",
-    "out",
-    // Go
-    "pkg",
-    // Ruby
-    ".bundle",
-    "vendor/bundle",
-    // Django
-    "staticfiles",
-    "media",
-    // General
-    ".git",
-    ".svn",
-    ".hg",
-    ".idea",
-    ".vscode",
-    ".DS_Store",
-    "logs",
-    "tmp",
-    "cache",
-    ".terraform",
-];
+pub static FALLBACK_REGION: &str = "us-east-1";
 
 // CONFIGURATION FILES
 pub static CONFIG_DIR_NAME: &str = "bedrust";
