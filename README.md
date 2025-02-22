@@ -4,6 +4,7 @@
 
 A neat way to invoke models on [Amazon Bedrock](https://aws.amazon.com/bedrock/). Written in Rust, and LIVE on [Twitch](https://twitch.tv/ruptwelve).
 
+> *NEW AS OF 0.8.6* - You can add `.bedrustrules` to your source code repo, for custom instructions when dealing with said code.
 > *NEW AS OF 0.8.2* - BETA: You can now export your chat to HTML files. (It will only save them as `conversation.html` in the current directory) 
 
 Currently supporting the following models:

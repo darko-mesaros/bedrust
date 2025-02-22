@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO: Better code testing
 - TODO: Handle longer pastes better
 
+## [0.8.6] - 2025-02-21
+
+### Fixed
+- The way the filenames are rendered in HTML output (no longer includes the random characters)
+
+### Added
+- `.bedrustrules` are now a thing. You can add custom system prompts that will be automatically read by Bedrust when reading code.
+
 ## [0.8.5] - 2024-12-30
 
 ### Changed
