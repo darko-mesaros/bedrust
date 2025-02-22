@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO: Better code testing
 - TODO: Handle longer pastes better
 
+## [0.8.7] - 2025-02-22
+
+### Changed
+- The conversation export is now saving the `.html` files to `~/.config/bedrust/chat_exports/`
+
+
 ## [0.8.6] - 2025-02-21
 
 ### Fixed
