@@ -186,3 +186,14 @@ pub fn generate_random_string(n: usize) -> String {
         .map(char::from) // Conver the u8 ASCII into chars
         .collect()
 }
+
+pub fn print_no_config_warning() {
+        print_warning("****************************************");
+        print_warning("WARNING:");
+        println!("Your Bedrust configuration files are not set up correctly.");
+        println!("To use Bedrust you need the appropriate `bedrust_config.ron and `model_config.ron` in your $HOME/.config/bedrust/ directory.");
+        println!("You can configure the application by running `bedrust --init`");
+        print_warning("****************************************");
+        print_warning("Bedrust will now exit");
+        std::process::exit(1);
+}
