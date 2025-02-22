@@ -3,10 +3,7 @@ use anyhow::anyhow;
 use aws_sdk_bedrockruntime::types::{ContentBlock, ConversationRole, Message};
 use dialoguer::Confirm;
 
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
-
-use crate::utils::print_warning;
+use crate::utils::{self, print_warning};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
@@ -16,14 +13,7 @@ use std::{
 
 use regex::Regex;
 
-use handlebars::{
-    Handlebars,
-    // Helper,
-    // Context,
-    // RenderContext,
-    // Output,
-    // HelperResult
-};
+use handlebars::Handlebars;
 
 use convert_case::{Case, Casing};
 
@@ -149,7 +139,6 @@ pub struct ConversationHistory {
     pub title: Option<String>,
     pub filename: Option<String>,
     pub summary: Option<String>,
-    // pub history: Option<String>,
     pub messages: Option<Vec<SerializableMessage>>,
     pub timestamp: String,
 }
@@ -314,8 +303,28 @@ impl ConversationHistory {
             Ok(_) => {
                 match handlebars.render("chat_export", &self) {
                     Ok(render) => {
-                        std::fs::write("conversation.html", render)?;
-                        println!("Succesfully saved the conversation to conversation.html");
+                        // If the filename does not exist, just create one with a generic name
+                        let html_filename = self.filename.clone().unwrap_or_else(|| {
+                            format!("conversation_{}.html", utils::generate_random_string(5))
+                        });
+                        let home_dir = home_dir().expect("Failed to get HOME directory");
+                        let exports_dir = home_dir.join(format!(
+                            ".config/{}/{}",
+                            constants::CONFIG_DIR_NAME,
+                            constants::CHAT_EXPORTS_DIR
+                        ));
+                        // if the chat_export dir does not exist - create it
+                        if !exports_dir.exists() {
+                            fs::create_dir(&exports_dir)?
+                        }
+                        let exported_file_path = exports_dir
+                            .join(format!("{}.html", html_filename.trim_end_matches(".json")));
+                        // Write the file to disk
+                        std::fs::write(&exported_file_path, render)?;
+                        println!(
+                            "Succesfully exported the conversation as HTML to {}",
+                            exported_file_path.display()
+                        );
                     }
                     Err(e) => eprintln!(
                         "Error: Something went wrong with rendering the HTML template: {}",
@@ -459,11 +468,8 @@ pub async fn save_chat_history(
     } else {
         let title = ch.generate_title(client).await?;
         // Generate a random suffix
-        let random_string: String = thread_rng()
-            .sample_iter(Alphanumeric) // These are ASCII u8
-            .take(5)
-            .map(char::from) // Conver the u8 ASCII into chars
-            .collect();
+
+        let random_string = utils::generate_random_string(5);
         let new_filename = format!("{}-{}.json", title, random_string);
         ch.title = Some(title.clone());
         ch.filename = Some(new_filename.clone());

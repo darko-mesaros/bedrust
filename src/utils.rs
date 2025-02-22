@@ -11,6 +11,8 @@ use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use colored::*;
 
 use dirs::home_dir;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 
 use crate::constants;
 
@@ -259,4 +261,13 @@ pub fn initialize_config() -> Result<(), anyhow::Error> {
 
     println!("✅ | Bedrust configuration has been initialized in ~/.config/bedrust. You may now use it as normal.");
     Ok(())
+}
+
+pub fn generate_random_string(n: usize) -> String {
+    // Generate a random suffix
+    thread_rng()
+        .sample_iter(Alphanumeric) // These are ASCII u8
+        .take(n)
+        .map(char::from) // Conver the u8 ASCII into chars
+        .collect()
 }

@@ -2,9 +2,6 @@
 use aws_sdk_bedrockruntime::types::InferenceConfiguration;
 use lazy_static::lazy_static;
 
-// FILENAMES
-pub static INSTRUCTION_FILE: &str = ".bedrustrules";
-
 // PROMPTS
 // TODO: Move this to a Systemprompt
 pub static CODE_CHAT_PROMPT: &str = r#"
@@ -122,6 +119,9 @@ pub static CODE_IGNORE_DIRS: &[&str] = &[
 pub static CONFIG_DIR_NAME: &str = "bedrust";
 pub static MODEL_CONFIG_FILE_NAME: &str = "model_config.ron";
 pub static BEDRUST_CONFIG_FILE_NAME: &str = "bedrust_config.ron";
+// FILENAMES
+pub static INSTRUCTION_FILE: &str = ".bedrustrules";
+pub static CHAT_EXPORTS_DIR: &str = "chat_exports";
 
 // UPDATED: 2024-08-02
 pub static BEDRUST_CONFIG_FILE: &str = r#"BedrustConfig(
