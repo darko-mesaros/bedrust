@@ -147,6 +147,7 @@ pub struct Content {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ConversationHistory {
     pub title: Option<String>,
+    pub filename: Option<String>,
     pub summary: Option<String>,
     // pub history: Option<String>,
     pub messages: Option<Vec<SerializableMessage>>,
@@ -156,15 +157,15 @@ pub struct ConversationHistory {
 impl ConversationHistory {
     pub fn new(
         title: Option<String>,
+        filename: Option<String>,
         summary: Option<String>,
-        // history: Option<String>,
         messages: Option<Vec<SerializableMessage>>,
     ) -> ConversationHistory {
         let local = Local::now().format("%Y-%m-%d %H:%M"); // e.g. `2014-11-28T21:45:59.324310806+09:00`
         ConversationHistory {
             title,
+            filename,
             summary,
-            // history,
             messages,
             timestamp: local.to_string(),
         }
@@ -336,6 +337,7 @@ impl ConversationHistory {
         let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
         ConversationHistory {
             title: None,
+            filename: None,
             summary: None,
             messages: None,
             timestamp: local.to_string(),
@@ -368,13 +370,15 @@ impl ConversationHistory {
                 Ok(response) => {
                     println!("✅ | Done ");
                     // Generate a random suffix
-                    let random_string: String = thread_rng()
-                        .sample_iter(Alphanumeric) // These are ASCII u8
-                        .take(5)
-                        .map(char::from) // Conver the u8 ASCII into chars
-                        .collect();
-                    let name = format!("{}-{}", response, random_string);
-                    return Ok(name);
+                    // let random_string: String = thread_rng()
+                    //     .sample_iter(Alphanumeric) // These are ASCII u8
+                    //     .take(5)
+                    //     .map(char::from) // Conver the u8 ASCII into chars
+                    //     .collect();
+                    // let name = format!("{}-{}", response, random_string);
+                    //let name = format!("{}-{}", response, random_string);
+                    // return Ok(name);
+                    return Ok(response);
                 }
                 Err(e) => {
                     // if an error occurs, print it and retry
@@ -463,8 +467,15 @@ pub async fn save_chat_history(
         )
     } else {
         let title = ch.generate_title(client).await?;
-        let new_filename = format!("{}.json", title);
+        // Generate a random suffix
+        let random_string: String = thread_rng()
+            .sample_iter(Alphanumeric) // These are ASCII u8
+            .take(5)
+            .map(char::from) // Conver the u8 ASCII into chars
+            .collect();
+        let new_filename = format!("{}-{}.json", title, random_string);
         ch.title = Some(title.clone());
+        ch.filename = Some(new_filename.clone());
         (new_filename.clone(), save_dir.join(&new_filename))
     };
 
