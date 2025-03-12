@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO: Better code testing
 - TODO: Handle longer pastes better
 
+## [0.8.7] - 2025-03-11
+
+### Added
+- New model support: DeepSeek R1 and Claude v3.7 Sonnet
+
 ## [0.8.6] - 2025-02-21
 
 ### Fixed
