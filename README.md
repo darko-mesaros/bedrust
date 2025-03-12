@@ -8,6 +8,9 @@ A neat way to invoke models on [Amazon Bedrock](https://aws.amazon.com/bedrock/)
 > *NEW AS OF 0.8.2* - BETA: You can now export your chat to HTML files. (It will only save them as `conversation.html` in the current directory) 
 
 Currently supporting the following models:
+- **DeepSeek R1**
+- **Claude 3.7 Sonnet**
+- Amazon Nova models
 - Claude 3.5 v2 Sonnet
 - Claude 3.5 Haiku
 - Claude 3.5 Sonnet
@@ -21,7 +24,6 @@ Currently supporting the following models:
 - Jurrasic 2 Ultra
 - Titan Text Express V1
 - Mistral AI models (Mixtral, Mistral7b and Mistral Large 1 and 2)
-- Amazon Nova models
 
 ## Getting Started
 
