@@ -257,14 +257,14 @@ mod tests {
     use crate::utils::load_bedrust_config;
     use base64::{engine::general_purpose, Engine as _};
     use image::{Rgb, RgbImage};
-    use rand::distributions::{Alphanumeric, DistString};
+    use rand::distr::{Alphanumeric, SampleString};
 
     // list all files in the directory
     #[test]
     fn list_all_images() {
         // prep the test by creating a know directory
         // generate random string for dir name
-        let dir_prefix = Alphanumeric.sample_string(&mut rand::thread_rng(), 5);
+        let dir_prefix = Alphanumeric.sample_string(&mut rand::rng(), 5);
         let dir_path = format!("/tmp/{}-bedrusttest", dir_prefix);
         // create the dir
         // TODO: handle issues creating the path
@@ -285,15 +285,18 @@ mod tests {
         // load supported file extensions
         let config = load_bedrust_config().unwrap();
 
-        let list =
-            list_files_in_path_by_extension(PathBuf::from(dir_path), config.supported_images);
+        let mut list =
+            list_files_in_path_by_extension(PathBuf::from(dir_path), config.supported_images).unwrap();
+
+        list.sort();
+
         let expected_vec = vec![
-            PathBuf::from(&file1_path),
             PathBuf::from(&file3_path),
             PathBuf::from(&file4_path),
+            PathBuf::from(&file1_path),
             PathBuf::from(&file5_path),
         ];
-        assert_eq!(expected_vec, list.unwrap());
+        assert_eq!(expected_vec, list);
     }
     #[test]
     fn load_image_from_disk() {

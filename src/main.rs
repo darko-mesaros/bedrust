@@ -85,6 +85,9 @@ async fn main() -> Result<()> {
         .temperature(bedrust_config.inference_params.temperature)
         .build();
 
+    // === SYSTEM PROMPT ===
+    let system_prompt = bedrust_config.system_prompt.as_deref().unwrap_or("You are a helpful assistant");
+
     //  === CAPTIONING RUN ===
     if arguments.caption.is_some() {
         caption_process(
@@ -252,6 +255,7 @@ async fn main() -> Result<()> {
                 model_id.to_string(),
                 &conversation_history,
                 inference_parameters.clone(),
+                system_prompt
             )
             .await?;
 
