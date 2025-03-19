@@ -64,10 +64,37 @@ impl From<&ConverseStreamOutputError> for BedrockConverseStreamError {
 // Function to get the output text
 fn get_converse_output_text(
     output: ConverseStreamOutputType,
+    is_reasoning: &mut bool,
 ) -> Result<String, BedrockConverseStreamError> {
     Ok(match output {
         ConverseStreamOutputType::ContentBlockDelta(event) => match event.delta() {
-            Some(delta) => delta.as_text().cloned().unwrap_or_else(|_| "".into()),
+            Some(delta) => {
+                if delta.is_reasoning_content() {
+                    // CHECK FOR SWITCH
+                    let was_reasoning = *is_reasoning;
+                    if !was_reasoning { 
+                        *is_reasoning = true;
+                        match delta.as_reasoning_content() {
+                            Ok(rc) => format!("\n🤔 Thinking...\n{}", rc.as_text().cloned().unwrap_or_else(|_|"".to_string())),
+                            Err(_) => "\n🤔 Thinking...\n".into()
+                        }
+                    } else {
+                        match delta.as_reasoning_content() {
+                            Ok(rc) => rc.as_text().cloned().unwrap_or_else(|_|"".to_string()),
+                            Err(_) => "".into()
+                        }
+                    } 
+                } else { 
+                    // END OF THINKING
+                    let was_reasoning = *is_reasoning;
+                    if was_reasoning {
+                        *is_reasoning = false;
+                        format!("\n ✅ Thinking Done\n{}", delta.as_text().cloned().unwrap_or_else(|_| "".into()))
+                    } else {
+                        delta.as_text().cloned().unwrap_or_else(|_| "".into())
+                    }
+                }
+            }, 
             None => "".into(),
         },
         _ => "".into(),
@@ -109,6 +136,8 @@ pub async fn call_converse_stream(
     // A string that response the message back
     let mut output = String::new();
 
+    let mut is_reasoning = false;
+
     // return the conversation
     let mut convo = Conversation::new(ConversationEntity::Assistant, String::new());
 
@@ -117,7 +146,7 @@ pub async fn call_converse_stream(
         let token = stream.recv().await;
         match token {
             Ok(Some(text)) => {
-                let next = get_converse_output_text(text)?;
+                let next = get_converse_output_text(text, &mut is_reasoning)?;
                 print!("{}", next);
                 output.push_str(&next);
                 Ok(())
