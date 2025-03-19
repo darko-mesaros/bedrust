@@ -3,8 +3,8 @@ use anyhow::anyhow;
 use aws_sdk_bedrockruntime::types::{ContentBlock, ConversationRole, Message};
 use dialoguer::Confirm;
 
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
+use rand::distr::Alphanumeric;
+use rand::{rng, Rng};
 
 use crate::utils::print_warning;
 use serde::{Deserialize, Serialize};
@@ -459,7 +459,7 @@ pub async fn save_chat_history(
     } else {
         let title = ch.generate_title(client).await?;
         // Generate a random suffix
-        let random_string: String = thread_rng()
+        let random_string: String = rng()
             .sample_iter(Alphanumeric) // These are ASCII u8
             .take(5)
             .map(char::from) // Conver the u8 ASCII into chars

@@ -257,14 +257,14 @@ mod tests {
     use crate::utils::load_bedrust_config;
     use base64::{engine::general_purpose, Engine as _};
     use image::{Rgb, RgbImage};
-    use rand::distributions::{Alphanumeric, DistString};
+    use rand::distr::{Alphanumeric, SampleString};
 
     // list all files in the directory
     #[test]
     fn list_all_images() {
         // prep the test by creating a know directory
         // generate random string for dir name
-        let dir_prefix = Alphanumeric.sample_string(&mut rand::thread_rng(), 5);
+        let dir_prefix = Alphanumeric.sample_string(&mut rand::rng(), 5);
         let dir_path = format!("/tmp/{}-bedrusttest", dir_prefix);
         // create the dir
         // TODO: handle issues creating the path
