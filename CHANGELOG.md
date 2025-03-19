@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO: Better code testing
 - TODO: Handle longer pastes better
 
+## [0.8.8] - 2025-03-18
+
+### Added
+- Support for indicating when the model is "thinking", ie is currently in "reasoning" mode.
+- Support for custom System Prompts (they can be defined the `bedrock_config.ron` file).
+
+## Changed
+- Upgraded all the crates to the latest versions
+
+## Fixed
+- Fixed the `list_all_images()` unit test.
+
 ## [0.8.7] - 2025-03-11
 
 ### Added
