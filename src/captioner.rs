@@ -285,15 +285,18 @@ mod tests {
         // load supported file extensions
         let config = load_bedrust_config().unwrap();
 
-        let list =
-            list_files_in_path_by_extension(PathBuf::from(dir_path), config.supported_images);
+        let mut list =
+            list_files_in_path_by_extension(PathBuf::from(dir_path), config.supported_images).unwrap();
+
+        list.sort();
+
         let expected_vec = vec![
-            PathBuf::from(&file1_path),
             PathBuf::from(&file3_path),
             PathBuf::from(&file4_path),
+            PathBuf::from(&file1_path),
             PathBuf::from(&file5_path),
         ];
-        assert_eq!(expected_vec, list.unwrap());
+        assert_eq!(expected_vec, list);
     }
     #[test]
     fn load_image_from_disk() {

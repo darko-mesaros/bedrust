@@ -17,11 +17,13 @@ exclude = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 anyhow = "1.0.79"
-aws-config = { version = "1.5.10", features = ["behavior-version-latest"]}
-aws-sdk-bedrock = "1.64.0"
-aws-sdk-bedrockruntime = "1.64.0"
-aws-types = "1.3.3"
+#aws-config = { version = "1.5.10", features = ["behavior-version-latest"]}
+aws-config = { version = "1.6.0", features = ["behavior-version-latest"]}
+#aws-sdk-bedrock = "1.64.0"
+aws-sdk-bedrock = "1.78.0"
+aws-sdk-bedrockruntime = "1.77.0"
 base64 = "0.22.0"
+aws-types = "1.3.6"
 chrono = "0.4.38"
 clap = { version = "4.5.0", features = ["derive"] }
 #colored = "2.1.0"
