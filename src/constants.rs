@@ -123,7 +123,7 @@ pub static CONFIG_DIR_NAME: &str = "bedrust";
 pub static MODEL_CONFIG_FILE_NAME: &str = "model_config.ron";
 pub static BEDRUST_CONFIG_FILE_NAME: &str = "bedrust_config.ron";
 
-// UPDATED: 2024-08-02
+// UPDATED: 2025-03-18
 pub static BEDRUST_CONFIG_FILE: &str = r#"BedrustConfig(
   // define what AWS profile to use
   aws_profile: "default",
@@ -138,6 +138,7 @@ pub static BEDRUST_CONFIG_FILE: &str = r#"BedrustConfig(
     max_tokens: 2048,
     top_p: 0.8, 
   ),
+  system_prompt: Some("You are helpful assistant.")
 )
 "#;
 // FIGLET FONT

@@ -46,6 +46,7 @@ pub struct BedrustConfig {
     #[serde(default = "_default_true")]
     pub show_banner: bool,
     pub inference_params: InferenceParams,
+    pub system_prompt: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

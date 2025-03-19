@@ -4,7 +4,7 @@ use aws_sdk_bedrockruntime::{
     operation::converse_stream::ConverseStreamError,
     types::{
         error::ConverseStreamOutputError, ConverseStreamOutput as ConverseStreamOutputType,
-        InferenceConfiguration, Message,
+        InferenceConfiguration, Message, SystemContentBlock,
     },
 };
 
@@ -79,7 +79,7 @@ pub async fn call_converse_stream(
     model_id: String,
     conversation_history: &ConversationHistory,
     inference_parameters: InferenceConfiguration,
-    //) -> Result<String, BedrockConverseStreamError> {
+    system_prompt: &str,
 ) -> Result<Conversation, BedrockConverseStreamError> {
     let msg: Vec<Message> = conversation_history
         .messages
@@ -92,6 +92,8 @@ pub async fn call_converse_stream(
     let response = bc
         .converse_stream()
         .model_id(model_id)
+        // FIX: See if I can avoid this clone
+        .system(SystemContentBlock::Text(system_prompt.to_string()))
         .set_messages(Some(msg))
         .inference_config(inference_parameters)
         .send()
