@@ -19,7 +19,8 @@ use bedrust::chat::{
     list_chat_histories, load_chat_history, print_conversation_history, save_chat_history,
     ConversationHistory,
 };
-use bedrust::utils::{check_for_config, print_warning};
+use bedrust::utils::print_warning;
+use bedrust::config::check_for_config;
 use clap::Parser;
 
 use bedrust::code::code_chat_process;
@@ -61,7 +62,7 @@ async fn main() -> Result<()> {
         std::process::exit(1);
     }
     // load bedrust config file
-    let bedrust_config = utils::load_bedrust_config()?;
+    let bedrust_config = config::load_bedrust_config()?;
 
     // configuring the SDK
     let config = configure_aws(String::from("us-east-1"), &bedrust_config.aws_profile).await;
@@ -71,7 +72,8 @@ async fn main() -> Result<()> {
     let bedrock_client = aws_sdk_bedrock::Client::new(&config);
 
     //let question = "Which songs are listed in the youtube video 'evolution of dance'?";
-    let model_id = arguments.model_id.or(bedrust_config.default_model);
+    // let model_id = arguments.model_id.or(bedrust_config.default_model);
+    let model_id = arguments.model_id.or_else(|| bedrust_config.get_default_model());
     let model_id = match model_id {
         Some(model_id) => model_id,
         None => prompt_for_model_selection()?,

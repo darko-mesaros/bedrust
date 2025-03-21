@@ -15,7 +15,7 @@ use serde::Serialize;
 use crate::models::check_model_features;
 use crate::models::converse::call_converse;
 use crate::models::ModelFeatures;
-use crate::utils::BedrustConfig;
+use crate::config::BedrustConfig;
 
 #[derive(Debug, Serialize)]
 pub struct Image {
@@ -254,7 +254,7 @@ pub fn write_captions(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::load_bedrust_config;
+    use crate::config::load_bedrust_config;
     use base64::{engine::general_purpose, Engine as _};
     use image::{Rgb, RgbImage};
     use rand::distr::{Alphanumeric, SampleString};

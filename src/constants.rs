@@ -132,6 +132,7 @@ pub static BEDRUST_CONFIG_FILE: &str = r#"BedrustConfig(
   // the prompt being used for image captioning
   caption_prompt: "Please caption the following image for the sake of accessibility. Return just the caption, and nothing else. Keep it clean, and under 100 words.",
   // choose to show the big ASCII banner on startup or not
+  default_model: None,
   show_banner: true,
   inference_params: (
     temperature: 0.5,
