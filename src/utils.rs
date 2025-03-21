@@ -144,11 +144,13 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
             .as_path()
             .to_str()
             .ok_or_else(|| anyhow!("Was unable to parse Figlet font path to string"))?;
-        let ansi_font = FIGfont::from_file(figlet_path_str).unwrap();
-        let hello = ansi_font.convert(s);
+        let ansi_font = FIGfont::from_file(figlet_path_str)
+            .map_err(|e| anyhow!("Failed to load the Figlet font: {}",e))?;
+        let hello = ansi_font.convert(s)
+            .ok_or_else(||anyhow!("Was unable to convert the hello message to ANSI fonts"))?;
 
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(255, 153, 0))))?;
-        println!("{}", hello.unwrap());
+        println!("{}", hello);
     } // if its false - just continue
     stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
     println!("{}", "----------------------------------------".cyan());
