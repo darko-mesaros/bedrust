@@ -172,6 +172,12 @@ There is one important configuration file that ship with **bedrust**:
 
 They *need* to be in your `$HOME/.config/bedrust/` directory. The application will warn you if they do not exist, and fail to run. You can create them automatically by running `bedrust --init`
 
+Additionally you can pass on configuration values as *environment variables*. For example:
+```bash
+export BEDRUST__default_model="us.amazon.nova-pro-v1:0"
+```
+These configuration items will take precedence.
+
 ## Instructions for code review
 
 When passing the `--source` option, you can also pass some instruction to Bedrust. Ie, some rules, or a guide how to help you with your code. Think of it as an [system prompt](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/system-prompts) that Bedrust will use when responding to your questions about your code.

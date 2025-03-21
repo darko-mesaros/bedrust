@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO: Better code testing
 - TODO: Handle longer pastes better
 
+## [0.8.9] - 2025-03-xx
+
+## Changed
+- Moved to the `config` crate for configuration.
+- Added italic fonts to the output that represents thinking.
+
+
 ## [0.8.8] - 2025-03-18
 
 ### Added

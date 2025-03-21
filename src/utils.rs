@@ -34,27 +34,6 @@ pub struct Args {
     pub xml: bool,
 }
 
-// #[derive(Debug, Deserialize, Serialize)]
-// pub struct BedrustConfig {
-//     pub aws_profile: String,
-//     pub supported_images: Vec<String>,
-//     pub caption_prompt: String,
-//     pub default_model: Option<ArgModels>,
-//     // FIX: Implement a better way for configuration defaults
-//     // for now if there is no configuration line use true
-//     #[serde(default = "_default_true")]
-//     pub show_banner: bool,
-//     pub inference_params: InferenceParams,
-//     pub system_prompt: Option<String>,
-// }
-//
-// #[derive(Debug, Deserialize, Serialize)]
-// pub struct InferenceParams {
-//     pub temperature: f32,
-//     pub max_tokens: i32,
-//     pub top_p: f32,
-// }
-
 #[derive(clap::ValueEnum, Clone, Serialize, Deserialize, Debug, Copy)]
 pub enum ArgModels {
     Llama270b,
@@ -88,6 +67,9 @@ impl Display for ArgModels {
         write!(f, "{}", self.to_str())
     }
 }
+
+
+// TODO: Implement FromStr for ArgModels to make it even more robust
 
 impl ArgModels {
     pub fn to_str(&self) -> &'static str {
@@ -214,34 +196,12 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-// pub fn load_bedrust_config() -> Result<BedrustConfig, anyhow::Error> {
-//     let home_dir = home_dir().expect("Failed to get HOME directory");
-//     let config_dir = home_dir.join(format!(".config/{}", constants::CONFIG_DIR_NAME));
-//     let bedrust_config_file_path = config_dir.join(constants::BEDRUST_CONFIG_FILE_NAME);
-//
-//     let file = fs::File::open(bedrust_config_file_path)?;
-//     //let config: BedrustConfig = ron::de::from_reader(file)?;
-//     let config: BedrustConfig = ron::de::from_reader(file)?;
-//     Ok(config)
-// }
 
 pub fn print_warning(s: &str) {
     println!("{}", s.yellow());
 }
 // TODO: Implement checking for AWS credentials
 
-// // function that checks if there are any configuration files present
-// pub fn check_for_config() -> Result<bool, anyhow::Error> {
-//     let home_dir = home_dir().expect("Failed to get HOME directory");
-//     let config_dir = home_dir.join(".config/bedrust");
-//     let bedrust_config_file_path = config_dir.join("bedrust_config.ron");
-//
-//     if !bedrust_config_file_path.exists() {
-//         Ok(false)
-//     } else {
-//         Ok(true)
-//     }
-// }
 
 pub fn prompt_for_model_selection() -> Result<ArgModels, anyhow::Error> {
     let model_list = ArgModels::value_variants();
@@ -260,38 +220,3 @@ pub fn prompt_for_model_selection_opt() -> Result<Option<ArgModels>, anyhow::Err
         .interact_opt()?;
     Ok(idx.map(|idx| model_list[idx]))
 }
-
-// // function that creates the configuration files during the `init` command
-// pub fn initialize_config() -> Result<(), anyhow::Error> {
-//     let home_dir = home_dir().expect("Failed to get HOME directory");
-//     let config_dir = home_dir.join(format!(".config/{}", constants::CONFIG_DIR_NAME));
-//     fs::create_dir_all(&config_dir)?;
-//
-//     let bedrust_config_file_path = config_dir.join(constants::BEDRUST_CONFIG_FILE_NAME);
-//     let bedrust_config_content = constants::BEDRUST_CONFIG_FILE.to_string();
-//
-//     let mut default_config: BedrustConfig =
-//         ron::de::from_str(&bedrust_config_content).expect("default config must be valid");
-//     default_config.default_model = prompt_for_model_selection_opt()?;
-//
-//     fs::write(
-//         &bedrust_config_file_path,
-//         ron::ser::to_string_pretty(&default_config, PrettyConfig::new())?,
-//     )?;
-//     println!(
-//         "⏳| Bedrust configuration file created at: {:?}",
-//         bedrust_config_file_path
-//     );
-//     println!("This file is used to store configuration items for the bedrust application.");
-//
-//     let figlet_font_file_path = config_dir.join(constants::FIGLET_FONT_FILENAME);
-//     let figlet_font_content = constants::FIGLET_FONT;
-//     fs::write(&figlet_font_file_path, figlet_font_content)?;
-//     println!("⏳| Figlet font created at: {:?}", figlet_font_file_path);
-//     println!(
-//         "This file is used to as a font for `figlet` to create the nice big font during launch."
-//     );
-//
-//     println!("✅ | Bedrust configuration has been initialized in ~/.config/bedrust. You may now use it as normal.");
-//     Ok(())
-// }
