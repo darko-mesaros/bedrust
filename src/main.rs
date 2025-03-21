@@ -86,7 +86,10 @@ async fn main() -> Result<()> {
         .build();
 
     // === SYSTEM PROMPT ===
-    let system_prompt = bedrust_config.system_prompt.as_deref().unwrap_or("You are a helpful assistant");
+    let system_prompt = bedrust_config
+        .system_prompt
+        .as_deref()
+        .unwrap_or("You are a helpful assistant");
 
     //  === CAPTIONING RUN ===
     if arguments.caption.is_some() {
@@ -255,7 +258,7 @@ async fn main() -> Result<()> {
                 model_id.to_string(),
                 &conversation_history,
                 inference_parameters.clone(),
-                system_prompt
+                system_prompt,
             )
             .await?;
 

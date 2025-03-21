@@ -43,7 +43,9 @@ pub async fn check_model_features(
         "us.amazon.nova-micro-v1:0" => "amazon.nova-micro-v1:0",
         "us.amazon.nova-lite-v1:0" => "amazon.nova-lite-v1:0",
         "us.amazon.nova-pro-v1:0" => "amazon.nova-pro-v1:0",
-        "us.anthropic.claude-3-7-sonnet-20250219-v1:0" => "anthropic.claude-3-7-sonnet-20250219-v1:0",
+        "us.anthropic.claude-3-7-sonnet-20250219-v1:0" => {
+            "anthropic.claude-3-7-sonnet-20250219-v1:0"
+        }
         "us.deepseek.r1-v1:0" => "deepseek.r1-v1:0",
         _ => m,
     };

@@ -42,23 +42,24 @@ pub async fn code_chat_process(
 
     // Check if `.bedrustrules` exists
     let br_path = code_path.join(constants::INSTRUCTION_FILE);
-    let query = match br_path.exists() && br_path.is_file() { 
+    let query = match br_path.exists() && br_path.is_file() {
         true => {
             // It's here load it instead of the default system prompt
             // Load the file
             let mut br_rules = fs::read_to_string(br_path)?;
-            br_rules.push_str(r#"
+            br_rules.push_str(
+                r#"
 Here are the files:
 <SOURCE_CODE_BEDRUST>{SOURCE_CODE}</SOURCE_CODE_BEDRUST>
-"#);
-        br_rules.replace("{SOURCE_CODE}", wrapped_code.as_str())
-        },
+"#,
+            );
+            br_rules.replace("{SOURCE_CODE}", wrapped_code.as_str())
+        }
         false => {
             // Nope, just use the default system prompt
             constants::CODE_CHAT_PROMPT.replace("{SOURCE_CODE}", wrapped_code.as_str())
         }
     };
-
 
     println!("----------------------------------------");
     print_warning("⚠ THIS IS A BETA FEATURE ⚠");
@@ -134,7 +135,7 @@ fn get_all_files(
         .filter_map(Result::ok)
         .filter(|entry| {
             let is_file = entry.file_type().is_some_and(|ft| ft.is_file());
-            let matches_extension = ext.as_ref().map_or(true, |extensions| {
+            let matches_extension = ext.as_ref().is_none_or(|extensions| {
                 entry
                     .path()
                     .extension()
@@ -164,7 +165,6 @@ async fn guess_code_type(
     }
 
     let model_id = constants::PROJECT_GUESS_MODEL_ID;
-    // let bcall = mk_bedrock_call(&query, None, model_id)?;
     // FIX: This just prints out the files - as this is how the call_bedrock function works
     // This println! is here to just make it look nice
     println!("Including the following file extensions in this run: ");

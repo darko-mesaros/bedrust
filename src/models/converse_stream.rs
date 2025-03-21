@@ -7,6 +7,7 @@ use aws_sdk_bedrockruntime::{
         InferenceConfiguration, Message, SystemContentBlock,
     },
 };
+use colored::{self, Colorize};
 
 // Converse Error type
 //
@@ -70,31 +71,49 @@ fn get_converse_output_text(
         ConverseStreamOutputType::ContentBlockDelta(event) => match event.delta() {
             Some(delta) => {
                 if delta.is_reasoning_content() {
-                    // CHECK FOR SWITCH
+                    // START OF THINKING
                     let was_reasoning = *is_reasoning;
-                    if !was_reasoning { 
+                    if !was_reasoning {
                         *is_reasoning = true;
                         match delta.as_reasoning_content() {
-                            Ok(rc) => format!("\n🤔 Thinking...\n{}", rc.as_text().cloned().unwrap_or_else(|_|"".to_string())),
-                            Err(_) => "\n🤔 Thinking...\n".into()
+                            // Spliting the format into 2 {} due to wanting to have italic only on
+                            // the produced text not the Thinking indicator
+                            Ok(rc) => format!(
+                                "{}\n{}",
+                                "\n🤔 Thinking...",
+                                rc.as_text()
+                                    .cloned()
+                                    .unwrap_or_else(|_| "".to_string())
+                                    .italic()
+                            ),
+                            Err(_) => "\n🤔 Thinking...\n".into(),
                         }
                     } else {
                         match delta.as_reasoning_content() {
-                            Ok(rc) => rc.as_text().cloned().unwrap_or_else(|_|"".to_string()),
-                            Err(_) => "".into()
+                            Ok(rc) => format!(
+                                "{}",
+                                rc.as_text()
+                                    .cloned()
+                                    .unwrap_or_else(|_| "".to_string())
+                                    .italic()
+                            ),
+                            Err(_) => "".into(),
                         }
-                    } 
-                } else { 
+                    }
+                } else {
                     // END OF THINKING
                     let was_reasoning = *is_reasoning;
                     if was_reasoning {
                         *is_reasoning = false;
-                        format!("\n ✅ Thinking Done\n{}", delta.as_text().cloned().unwrap_or_else(|_| "".into()))
+                        format!(
+                            "\n ✅ Thinking Done\n{}",
+                            delta.as_text().cloned().unwrap_or_else(|_| "".into())
+                        )
                     } else {
                         delta.as_text().cloned().unwrap_or_else(|_| "".into())
                     }
                 }
-            }, 
+            }
             None => "".into(),
         },
         _ => "".into(),
