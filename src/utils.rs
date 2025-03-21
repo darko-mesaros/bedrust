@@ -68,7 +68,6 @@ impl Display for ArgModels {
     }
 }
 
-
 // TODO: Implement FromStr for ArgModels to make it even more robust
 
 impl ArgModels {
@@ -106,39 +105,32 @@ impl ArgModels {
             "anthropic.claude-v2" => Some(ArgModels::ClaudeV2),
             "anthropic.claude-v2:1" => Some(ArgModels::ClaudeV21),
             "anthropic.claude-3-haiku-20240307-v1:0" => Some(ArgModels::ClaudeV3Haiku),
-            "anthropic.claude-3-5-haiku-20241022-v1:0" => Some(ArgModels::ClaudeV35Haiku), 
-            "anthropic.claude-3-sonnet-20240229-v1:0" => Some(ArgModels::ClaudeV3Sonnet), 
-            "anthropic.claude-3-opus-20240229-v1:0" => Some(ArgModels::ClaudeV3Opus), 
-            "anthropic.claude-3-5-sonnet-20240620-v1:0" => Some(ArgModels::ClaudeV35Sonnet), 
-            "anthropic.claude-3-5-sonnet-20241022-v2:0" => Some(ArgModels::ClaudeV352Sonnet), 
-            "us.anthropic.claude-3-7-sonnet-20250219-v1:0" => Some(ArgModels::ClaudeV37Sonnet), 
-            "us.deepseek.r1-v1:0" => Some(ArgModels::DeepSeekR1), 
-            "meta.llama2-70b-chat-v1" => Some(ArgModels::Llama270b), 
-            "meta.llama3-1-405b-instruct-v1:0" => Some(ArgModels::Llama31405bInstruct), 
-            "meta.llama3-1-70b-instruct-v1:0" => Some(ArgModels::Llama3170bInstruct), 
-            "meta.llama3-1-8b-instruct-v1:0" => Some(ArgModels::Llama318bInstruct), 
-            "cohere.command-text-v14" => Some(ArgModels::CohereCommand), 
-            "ai21.j2-ultra-v1" => Some(ArgModels::Jurrasic2Ultra), 
-            "amazon.titan-text-express-v1" => Some(ArgModels::TitanTextExpressV1), 
-            "mistral.mixtral-8x7b-instruct-v0:1" => Some(ArgModels::Mixtral8x7bInstruct), 
-            "mistral.mistral-7b-instruct-v0:2" => Some(ArgModels::Mistral7bInstruct), 
-            "mistral.mistral-large-2402-v1:0" => Some(ArgModels::MistralLarge), 
-            "mistral.mistral-large-2407-v1:0" => Some(ArgModels::MistralLarge2), 
-            "us.amazon.nova-micro-v1:0" => Some(ArgModels::NovaMicro), 
-            "us.amazon.nova-lite-v1:0" => Some(ArgModels::NovaLite), 
-            "us.amazon.nova-pro-v1:0" => Some(ArgModels::NovaPro), 
+            "anthropic.claude-3-5-haiku-20241022-v1:0" => Some(ArgModels::ClaudeV35Haiku),
+            "anthropic.claude-3-sonnet-20240229-v1:0" => Some(ArgModels::ClaudeV3Sonnet),
+            "anthropic.claude-3-opus-20240229-v1:0" => Some(ArgModels::ClaudeV3Opus),
+            "anthropic.claude-3-5-sonnet-20240620-v1:0" => Some(ArgModels::ClaudeV35Sonnet),
+            "anthropic.claude-3-5-sonnet-20241022-v2:0" => Some(ArgModels::ClaudeV352Sonnet),
+            "us.anthropic.claude-3-7-sonnet-20250219-v1:0" => Some(ArgModels::ClaudeV37Sonnet),
+            "us.deepseek.r1-v1:0" => Some(ArgModels::DeepSeekR1),
+            "meta.llama2-70b-chat-v1" => Some(ArgModels::Llama270b),
+            "meta.llama3-1-405b-instruct-v1:0" => Some(ArgModels::Llama31405bInstruct),
+            "meta.llama3-1-70b-instruct-v1:0" => Some(ArgModels::Llama3170bInstruct),
+            "meta.llama3-1-8b-instruct-v1:0" => Some(ArgModels::Llama318bInstruct),
+            "cohere.command-text-v14" => Some(ArgModels::CohereCommand),
+            "ai21.j2-ultra-v1" => Some(ArgModels::Jurrasic2Ultra),
+            "amazon.titan-text-express-v1" => Some(ArgModels::TitanTextExpressV1),
+            "mistral.mixtral-8x7b-instruct-v0:1" => Some(ArgModels::Mixtral8x7bInstruct),
+            "mistral.mistral-7b-instruct-v0:2" => Some(ArgModels::Mistral7bInstruct),
+            "mistral.mistral-large-2402-v1:0" => Some(ArgModels::MistralLarge),
+            "mistral.mistral-large-2407-v1:0" => Some(ArgModels::MistralLarge2),
+            "us.amazon.nova-micro-v1:0" => Some(ArgModels::NovaMicro),
+            "us.amazon.nova-lite-v1:0" => Some(ArgModels::NovaLite),
+            "us.amazon.nova-pro-v1:0" => Some(ArgModels::NovaPro),
             _ => None,
         }
-
     }
 }
 // ######################################## END ARGUMENT PARSING
-// ######################################## CONST FUNCTIONS
-// Used to set default values to struct fields during serialization
-const fn _default_true() -> bool {
-    true
-}
-// ######################################## END CONST FUNCTIONS
 
 pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
     let home_dir = home_dir().expect("Failed to get HOME directory");
@@ -196,12 +188,10 @@ pub fn hello_header(s: &str) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-
 pub fn print_warning(s: &str) {
     println!("{}", s.yellow());
 }
 // TODO: Implement checking for AWS credentials
-
 
 pub fn prompt_for_model_selection() -> Result<ArgModels, anyhow::Error> {
     let model_list = ArgModels::value_variants();

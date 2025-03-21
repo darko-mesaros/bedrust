@@ -1,11 +1,11 @@
 use crate::utils::{print_warning, prompt_for_model_selection_opt, ArgModels};
-use std::{io, path::PathBuf};
-use std::io::Write;
 use anyhow::anyhow;
 use config::{Config, ConfigError, File, FileFormat};
 use dirs::home_dir;
 use ron::ser::PrettyConfig;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::io::Write;
+use std::{io, path::PathBuf};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct BedrustConfig {
@@ -32,7 +32,7 @@ fn _default_true() -> bool {
 
 impl Default for BedrustConfig {
     fn default() -> Self {
-        Self { 
+        Self {
             aws_profile: "default".to_string(),
             supported_images: vec!["jpg".to_string(), "jpeg".to_string(), "png".to_string(), "bmp".to_string()],
             caption_prompt: "Please caption the following image for the sake of accessibility. Return just the caption, and nothing else. Keep it clean, and under 100 words.".to_string(),
@@ -54,16 +54,20 @@ impl BedrustConfig {
         let config_dir = home_dir.join(".config/bedrust");
         let config_file = config_dir.join("bedrust_config.ron");
         // ~/.config/bedrust/bedrust_config.ron
-        
+
         // Create a new config instance
         let config = Config::builder()
             // Start with default values
             .add_source(config::File::from_str(
-                    crate::constants::BEDRUST_CONFIG_FILE,
-                    FileFormat::Ron
+                crate::constants::BEDRUST_CONFIG_FILE,
+                FileFormat::Ron,
             ))
             // Add the config file if it already exists
-            .add_source(File::from(config_file).required(false).format(FileFormat::Ron))
+            .add_source(
+                File::from(config_file)
+                    .required(false)
+                    .format(FileFormat::Ron),
+            )
             // Add in settings from the environment
             .add_source(config::Environment::with_prefix("BEDRUST").separator("__"))
             .build()?;
@@ -79,10 +83,7 @@ impl BedrustConfig {
         std::fs::create_dir_all(&config_dir)?;
 
         let config_file = config_dir.join("bedrust_config.ron");
-        let config_str = ron::ser::to_string_pretty(
-            self,
-            PrettyConfig::new()
-        )?;
+        let config_str = ron::ser::to_string_pretty(self, PrettyConfig::new())?;
 
         std::fs::write(config_file, config_str)?;
 
@@ -101,7 +102,9 @@ impl BedrustConfig {
     }
 
     pub fn get_default_model(&self) -> Option<ArgModels> {
-        self.default_model.as_ref().and_then(|s| ArgModels::from_config_str(s))
+        self.default_model
+            .as_ref()
+            .and_then(|s| ArgModels::from_config_str(s))
     }
 }
 
@@ -146,7 +149,7 @@ fn initialize_config() -> Result<(), anyhow::Error> {
     let model_choice = prompt_for_model_selection_opt()?;
     config.default_model = match model_choice {
         Some(model) => Some(model.to_str().to_string()),
-        None => std::process::exit(1) // fail if no choice - this will likely never happen
+        None => std::process::exit(1), // fail if no choice - this will likely never happen
     };
     // Save the config
     config.save()?;
@@ -171,7 +174,7 @@ fn initialize_config() -> Result<(), anyhow::Error> {
 }
 
 pub fn load_bedrust_config() -> Result<BedrustConfig, anyhow::Error> {
-    BedrustConfig::new().map_err(|e| anyhow!("Failed to load the configuration: {}",e))
+    BedrustConfig::new().map_err(|e| anyhow!("Failed to load the configuration: {}", e))
 }
 
 pub fn check_for_config() -> Result<bool, anyhow::Error> {

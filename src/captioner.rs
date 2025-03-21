@@ -12,10 +12,10 @@ use indicatif::{ProgressBar, ProgressStyle};
 use quick_xml::se;
 use serde::Serialize;
 
+use crate::config::BedrustConfig;
 use crate::models::check_model_features;
 use crate::models::converse::call_converse;
 use crate::models::ModelFeatures;
-use crate::config::BedrustConfig;
 
 #[derive(Debug, Serialize)]
 pub struct Image {

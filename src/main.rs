@@ -19,8 +19,8 @@ use bedrust::chat::{
     list_chat_histories, load_chat_history, print_conversation_history, save_chat_history,
     ConversationHistory,
 };
-use bedrust::utils::print_warning;
 use bedrust::config::check_for_config;
+use bedrust::utils::print_warning;
 use clap::Parser;
 
 use bedrust::code::code_chat_process;
@@ -73,7 +73,9 @@ async fn main() -> Result<()> {
 
     //let question = "Which songs are listed in the youtube video 'evolution of dance'?";
     // let model_id = arguments.model_id.or(bedrust_config.default_model);
-    let model_id = arguments.model_id.or_else(|| bedrust_config.get_default_model());
+    let model_id = arguments
+        .model_id
+        .or_else(|| bedrust_config.get_default_model());
     let model_id = match model_id {
         Some(model_id) => model_id,
         None => prompt_for_model_selection()?,
